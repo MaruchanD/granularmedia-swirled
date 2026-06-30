@@ -11,13 +11,13 @@ mutable struct Particle{N, T}
 end
 
 # INTEGRADOR (VELOCITY-VERLET)
-function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_forces!) where {N, T}
+function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_forces!, tiempo::T) where {N, T}
     for p in particles
         p.r = p.r + p.v * dt + 0.5 * p.a * dt^2
         p.v = p.v + 0.5 * p.a * dt
     end
     
-    calc_forces!(particles)
+    calc_forces!(particles, tiempo + dt)
     
     for p in particles
         p.v = p.v + 0.5 * p.a * dt
@@ -25,9 +25,10 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
 end
 
 # FUERZAS APLICADAS A LAS PARTICULAS
-function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_contenedor::T) where {N, T}
+function contenedor_circular!(particles::Vector{Particle{N, T}}) where {N, T}
     kn_wall = 1.0e5
-    gn_wall = 5.0e2
+    gn_wall = 0.0 #5.0e3
+    radio_contenedor = 5.0
 
     for p in particles
         d = norm(p.r)
@@ -43,20 +44,27 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_contenedo
     end
 end
 
-function fuerza_inercial!(particles::Vector{Particle{N, T}}, omega::T) where {N, T}
+function fuerza_inercial!(particles::Vector{Particle{N, T}}, tiempo::T) where {N, T}
+    omega = 2.0 * pi                                      # Velocidad angular del contenedor (rad/s)
+    r_giro = 2.0
     for p in particles
-        # Fuerza centrífuga: F_c = m * omega^2 * r
-        F_c = p.mass * omega^2 * p.r
+        # Fuerza inercial debido al giro del envase
+        F_x = p.mass * r_giro * omega^2 * cos(omega * tiempo)
+        F_y = p.mass * r_giro * omega^2 * sin(omega * tiempo)
+        F_i = @SVector [F_x, F_y]
         # Aceleración centrífuga: a_c = F_c / m = omega^2 * r
-        p.a += F_c / p.mass
+        p.a += F_i / p.mass
     end
 end
 
-function fuerza_total!(particles::Vector{Particle{N, T}}) where {N, T}
-    radio_contenedor = 5.0
-    omega = 2.0 * pi                                        # Velocidad angular del contenedor (rad/s)
-    contenedor_circular!(particles, radio_contenedor)       #Fuerza ejercida por el contenedor circular
-    fuerza_inercial!(particles, omega)                      #Fuerza centrífuga
+function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T) where {N, T}
+    # Resetear aceleraciones 
+    # (ESTE PASO ES CRUCIAL PARA EVITAR ACUMULACIÓN DE FUERZAS)
+    for p in particles
+        p.a = @SVector zeros(T, N)
+    end
+    #contenedor_circular!(particles)                     # Fuerza ejercida por el contenedor circular
+    fuerza_inercial!(particles, tiempo)                         # Fuerza inercial debido al giro del envase
 end
 
 # Exportacion a OVITO
@@ -75,15 +83,14 @@ end
 function simular_sistema()
     sistema = [
         #Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.1),
-        Particle(@SVector[1.0, 1.0], @SVector[0.5, -0.5], @SVector[0.0, 0.0], 1.0, 0.5)#,
+        Particle(@SVector[1.0, 1.0], @SVector[0.0,- 4.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5)#,
         #Particle(@SVector[-1.5, 1.5], @SVector[-0.3, -0.2], @SVector[0.0, 0.0], 2.0, 0.2)
     ]
     # Parametros
     radio_contenedor = 5.0
-    omega = 2.0 * pi # Velocidad angular del contenedor (rad/s)
 
     dt = 1.0e-4
-    tiempo_total = 1.0 # 10.0 segundos de simulación física
+    tiempo_total = 5.0 
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100 
     
@@ -93,7 +100,7 @@ function simular_sistema()
     println("Iniciando movimiento swirled...")
     
     for paso in 1:pasos
-        velocity_verlet_step!(sistema, dt, fuerza_total!)
+        velocity_verlet_step!(sistema, dt, fuerza_total!, dt * paso)
         
         if paso % frecuencia_guardado == 0
             guardar_frame_xyz!(archivo_salida, sistema, paso * dt, radio_contenedor)
