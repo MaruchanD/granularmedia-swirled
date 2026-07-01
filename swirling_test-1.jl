@@ -46,7 +46,7 @@ end
 
 function fuerza_inercial!(particles::Vector{Particle{N, T}}, tiempo::T) where {N, T}
     omega = 2.0 * pi                                      # Velocidad angular del contenedor (rad/s)
-    r_giro = 2.0
+    r_giro = 4.0
     for p in particles
         # Fuerza inercial debido al giro del envase
         F_x = p.mass * r_giro * omega^2 * cos(omega * tiempo)
@@ -63,7 +63,7 @@ function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T) where {N, T
     for p in particles
         p.a = @SVector zeros(T, N)
     end
-    #contenedor_circular!(particles)                     # Fuerza ejercida por el contenedor circular
+    contenedor_circular!(particles)                     # Fuerza ejercida por el contenedor circular
     fuerza_inercial!(particles, tiempo)                         # Fuerza inercial debido al giro del envase
 end
 
@@ -82,9 +82,9 @@ end
 # Ejecucion de prueba
 function simular_sistema()
     sistema = [
-        #Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.1),
-        Particle(@SVector[1.0, 1.0], @SVector[0.0,- 4.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5)#,
-        #Particle(@SVector[-1.5, 1.5], @SVector[-0.3, -0.2], @SVector[0.0, 0.0], 2.0, 0.2)
+        Particle(@SVector[0.0, 0.0], @SVector[0.0, -8.0], @SVector[0.0, 0.0], 1.0, 0.5),
+        Particle(@SVector[1.0, 1.0], @SVector[0.0, -8.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5),
+        Particle(@SVector[-1.5, 1.5], @SVector[0.0, -8.0], @SVector[0.0, 0.0], 1.0, 0.5)
     ]
     # Parametros
     radio_contenedor = 5.0
