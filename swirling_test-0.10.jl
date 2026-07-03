@@ -17,6 +17,7 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
         p.v = p.v + 0.5 * p.a * dt
     end
     
+    #Se tiene una fuerza dependiente del tiempo, asi que hay que actualizar esa fuerza en el siguiente paso de tiempo. Por eso se pasa el [tiempo + dt] a la funcion de fuerzas.
     calc_forces!(particles, tiempo + dt)
     
     for p in particles
