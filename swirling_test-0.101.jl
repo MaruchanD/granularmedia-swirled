@@ -4,7 +4,8 @@
 # La simple necesita una funcion que ajuste adecuadamente las velocidades iniciales de las
 # particulas, mientras que la de rampa no necesita de esto, ya que la aceleracion inercial
 # es exacta y no depende de las velocidades iniciales, ademas de imita el inicio del
-# del movimiento de un shaker.
+# del movimiento de un shaker. No obstante, produce deriva para valores de tau comparables
+# con el paso de integracion dt.
 using StaticArrays
 using LinearAlgebra
 
@@ -100,11 +101,11 @@ function simular_sistema()
     radio_contenedor = 5.0
 
     dt = 1.0e-4
-    tiempo_total = 10.0
+    tiempo_total = 20.0
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100
 
-    archivo_salida = "giro_swirling.xyz"
+    archivo_salida = "resultados/giro_corregido_swirling_101.xyz"
     open(archivo_salida, "w") do io end # Limpiar archivo si existe
 
     println("Iniciando movimiento swirled...")
