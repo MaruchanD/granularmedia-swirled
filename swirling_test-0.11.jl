@@ -1,3 +1,8 @@
+# Aqui se considera un interaccion realista con el fondo del contenedor. Incluyendo arrastre
+# viscoso, friccion de rodadura y fuerza inercial por aceleracion del contenedor. 
+# No se estan considerando interacciones entre particulas, ni con las paredes del contenedor.
+# No hay funcion que resetea las aceleraciones de las particulas,
+# por lo que hay que tomarlo en cuenta.
 using StaticArrays
 using LinearAlgebra
 

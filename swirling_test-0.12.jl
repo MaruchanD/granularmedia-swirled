@@ -1,3 +1,7 @@
+# Solo se aplica una fuerza inercial debido al giro del contenedor. 
+# Se toman en cuenta interacciones entre particulas y con las paredes del contenedor.
+# La funcion que calcula las fuerzas resetea las aceleraciones de las particulas, 
+# por lo que no es necesario hacerlo en el integrador. Para evitar acumulacion de fuerzas.
 using StaticArrays
 using LinearAlgebra
 
