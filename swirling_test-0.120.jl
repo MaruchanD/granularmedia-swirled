@@ -116,9 +116,9 @@ end
 # Ejecucion de prueba
 function simular_sistema()
     sistema = [
-        Particle(@SVector[0.0, 0.0], @SVector[0.0, -8.0], @SVector[0.0, 0.0], 1.0, 0.5),
+        Particle(@SVector[0.0, 0.0], @SVector[0.0, -8.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5),
         Particle(@SVector[1.0, 1.0], @SVector[0.0, -8.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5),
-        Particle(@SVector[-1.5, 1.5], @SVector[0.0, -8.0], @SVector[0.0, 0.0], 1.0, 0.5)
+        Particle(@SVector[-1.5, 1.5], @SVector[0.0, -8.0 * pi], @SVector[0.0, 0.0], 1.0, 0.5)
     ]
     # Parametros
     radio_contenedor = 5.0
@@ -128,7 +128,7 @@ function simular_sistema()
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100 
     
-    archivo_salida = "contenedor_swirling.xyz"
+    archivo_salida = "resultados/contenedor_swirling.xyz"
     open(archivo_salida, "w") do io end # Limpiar archivo si existe
 
     println("Iniciando movimiento swirled...")

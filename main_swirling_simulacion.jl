@@ -9,7 +9,7 @@ mutable struct Particula{N, T}
     r::SVector{N, T}        #Posicion
     v::SVector{N, T}        #Velocidad
     a::SVector{N, T}        #Aceleracion
-    m::T                    #Masa
+    masa::T                 #Masa
     radio::T                #Radio
 end
 
