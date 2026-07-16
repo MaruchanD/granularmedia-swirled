@@ -24,7 +24,7 @@ end
 
 function excitacion_orbital_rampa!(particles::Vector{Particle{N,T}}, tiempo::T) where {N, T}
     # Parametros para la excitacion
-    amplitud = 1.0                      # Radio de la excitacion (1.0 a 5.0 cm)
+    amplitud = 3.0                      # Radio de la excitacion (1.0 a 5.0 cm)
     frecuencia = 1.0                    # Frecuencia de la excitacion (0.1 - 5.0 Hz)
     tau = 1.0                           # Tiempo de rampa (s)
     omega = 2.0 * pi * frecuencia       # Facilidad para construir las cuentas
@@ -135,14 +135,14 @@ end
 function simular_sistema()
     sistema = [
         Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5),
-        Particle(@SVector[1.0, 1.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5),
-        Particle(@SVector[-1.5, 1.5], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)
+        Particle(@SVector[2.0, 1.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5),
+        Particle(@SVector[-2.5, -1.5], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)
     ]
     # Parametros
     radio_contenedor = 5.0
 
     dt = 1.0e-4
-    tiempo_total = 5.0 
+    tiempo_total = 10.0 
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100 
     
