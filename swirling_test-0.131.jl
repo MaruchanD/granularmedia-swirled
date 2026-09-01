@@ -143,8 +143,8 @@ function excitacion_orbital_rampa!(particles::Vector{Particle{N,T}}, tiempo::T) 
     a_A = (amplitud / tau^2) * factor_exp * (1.0 - tiempo/tau)
 
     # Aceleracion inercial exacta
-    aceleracion_x = -(a_A * cos(omega * tiempo) - 2.0 * v_A * (omega) * sin(omega * tiempo) - A_t * (omega)^2 * cos(omega * tiempo))
-    aceleracion_y = -(a_A * sin(omega * tiempo) + 2.0 * v_A * (omega) * cos(omega * tiempo) - A_t * (omega)^2 * sin(omega * tiempo))
+    aceleracion_x = (a_A * cos(omega * tiempo) - 2.0 * v_A * (omega) * sin(omega * tiempo) - A_t * (omega)^2 * cos(omega * tiempo))
+    aceleracion_y = (a_A * sin(omega * tiempo) + 2.0 * v_A * (omega) * cos(omega * tiempo) - A_t * (omega)^2 * sin(omega * tiempo))
     aceleracion_inercial = @SVector [aceleracion_x, aceleracion_y]
 
     # Aplicar la aceleracion inercial a cada particula
@@ -160,7 +160,7 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}) where {N, T}
     kn_wall = 1.0e5
     gamma_wall = 5.0e3
     # Parametros tangenciales
-    mu_pared = 0.3 
+    mu_pared = 0.3
     gamma_t_pared = 8.0e2
 
     for p in particles
@@ -306,7 +306,7 @@ function simular_sistema()
 
     # Parametros de la ejecucion
     dt = 1.0e-4
-    tiempo_total = 10.0 
+    tiempo_total = 50.0 
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100 
     
