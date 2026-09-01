@@ -1,4 +1,4 @@
-# Intento para agregar fuerzas tangenciales entre particulas. #
+# Intento para agregar fuerzas tangenciales entre particulas. 
 # Se usa un enfoque viscoso regularizado. Se modela el contacto como un amortiguador viscoso, pero truncado
 # por el limite de Coulomb. De aqui el calculo Ft_mag= min(Ft_prueba, F_limite_coulomb). Esto con el objeto
 # de no evaluar esta fuerza de forma instantanea y tambien no modificar todo la estructura de datos utilizada
