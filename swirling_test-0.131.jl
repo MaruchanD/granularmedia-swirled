@@ -1,3 +1,7 @@
+# Segunda integracion de varias funciones.
+# Se integra la funcion que genera las configuraciones con el resto del codigo que produce la dinamica
+# swirling. Esto con el objetivo de empezar a probar configuraciones con mas particulas.
+# Se esta implementando con el codigo de la version 0.131, la cual considera las fuerzas tangenciales. 
 using StaticArrays
 using LinearAlgebra
 
