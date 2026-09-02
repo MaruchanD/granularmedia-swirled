@@ -1,9 +1,10 @@
 # Las versiones 0.14* van a considerar el movimiento de rotacion alrededor del eje de simetria de las particulas.
 # Se hacen modificaciones a la estructura de las particulas, al integrador y a las funciones de fuerzas para considerar el torque. 
-# En esta primera version, solo se modifica la estructura y el integrador, dejando las funciones de fuerza sin modificar. 
+# En esta primera version, solo se modifica la estructura, el integrador y las funciones de fuerza. 
 # Esto con el objetivo de probar la implementacion del torque y la rotacion de las particulas.
 # Tambien se modifica la funcion que guarda los frames, se obvia el generador de configuraciones. Se probaran configuraciones ya generadas.
-# Se agrega una ligera modificacion al integrador para poder pasar el tamaño del recipiente.
+# Se agrega una ligera modificacion al integrador para poder pasar el tamaño del recipiente, al igual que incluir en la funcion que genera el archivo .xyz
+# las variables asociadas a la rotacion (theta y omega). Se agregan comentarios para explicar los cambios realizados.
 
 using StaticArrays
 using LinearAlgebra
@@ -236,25 +237,37 @@ function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, radio_Recip
         p.alpha = 0.0
     end
 
-    # Aplicar todas las fuerzas
+    # -- Aceleracion inercial asociado al movimiento de swirling del recipiente -- #
     excitacion_orbital_rampa!(particles, tiempo)
+
+    # -- Fuerzas debidas al contacto con el recipiente circular -- #
     contenedor_circular!(particles, radio_Recipiente)
+
+    # -- Fuerzas debidas al contacto entre particulas -- #
     contacto_particulas!(particles)
 end
 
 # Exportacion a OVITO
 function guardar_frame_xyz!(archivo::String, particles::Vector{Particle{N, T}}, tiempo::Float64, radio_Recipiente::T) where {N, T}
     open(archivo, "a") do io
-        println(io, length(particles)+1)  # Número de partículas + contenedor
+        # -- Número de partículas + contenedor -- #
+        println(io, length(particles)+1)
+
+        # -- Propiedades del archivo para ser leidas por el programa OVITO -- #
         println(io, "Properties=species:S:1:pos:R:3:radius:R:1:Theta:R:1:OmegaZ:R:1 Time=$tiempo")
+
+        # -- Variables de las particulas -- #
         for p in particles
             # Se agregan las propiedades de rotacion (Theta y OmegaZ) al archivo de salida
             println(io, "Granulo $(p.r[1]) $(p.r[2]) 0.0 $(p.radius) $(p.theta) $(p.omega)")
         end
+
+        # -- Variables del recipiente -- #
         println(io, "Contenedor 0.0 0.0 0.0 $radio_Recipiente 0.0 0.0")
     end
 end
 
+# -- Funcion principal para simular el sistema de particulas -- #
 function simular_sistema()
     sistema = [
         Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 1.0, 0.0, 0.5),
