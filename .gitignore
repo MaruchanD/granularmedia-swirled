@@ -1,4 +1,6 @@
 *.xyz
 *.txt
+*.dat
 animacion/
 resultados/
+datos/
