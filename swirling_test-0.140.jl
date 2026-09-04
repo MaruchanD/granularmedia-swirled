@@ -270,10 +270,7 @@ end
 # -- Funcion principal para simular el sistema de particulas -- #
 function simular_sistema()
     sistema = [
-        Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 1.0, 0.0, 0.5),
-        Particle(@SVector[2.0, 1.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 2*pi, 0.0, 0.0, 0.5),
-        Particle(@SVector[-2.5, -1.5], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 3.0, 0.0, 0.5)
-    ]
+        Particle(@SVector[0.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5)]
     # Parametros
     radio_Recipiente = 5.0
 
