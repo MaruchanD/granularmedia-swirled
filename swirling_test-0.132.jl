@@ -1,3 +1,4 @@
+# Pruebas con una sola particulas para modificar la funcion de excitacion_orbital_rampa()
 using StaticArrays
 using LinearAlgebra
 
