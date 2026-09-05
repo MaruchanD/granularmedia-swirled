@@ -2,6 +2,9 @@
 # calcular la energia potencial de la interaccion particula-pared y particula-particula, al igual que la energia cinetica de las particulas.
 # Adicionalmente, tambien se buscara agregar la disipacion de energia por friccion. 
 # Se agrega ahora las funciones que generan tanto al sistema como una configuracion aleatoria para seguir probando la estabilidad.
+# Tambien se hicieron modificaciones mayores para mejorar la modularidad del codigo respecto a versiones anteriores.
+# Al igual que se embebio el calculo de la energia potencial en las funciones que calculan los contactos particula-particula y
+# particula-pared, para que se pueda calcular la energia mecanica total del sistema de particulas en el laboratorio.
 
 using StaticArrays
 using LinearAlgebra
@@ -350,6 +353,8 @@ function simular_sistema()
     # -- Inicializacion del sistema de particulas -- # 
     sistema = generar_sistema(numero_Particulas, dimension_Sistema, R = radio_Particula, m = masa_Particula)
     generar_configuracion!(sistema, radio_Recipiente)
+
+    # Sistema de particulas de prueba para verificar funciones o estabilidad de la simulacion
     #sistema = [Particle(@SVector[1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5), Particle(@SVector[-1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)]
 
     # -- Parametros de la ejecucion -- #
