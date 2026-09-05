@@ -2,7 +2,9 @@
 *.txt
 *.dat
 *.png
+*.cpp
 animacion/
-resultados/
+Codigo Carlos/
 datos/
+graficos/
 resultados/
