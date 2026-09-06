@@ -316,10 +316,10 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 100
+    numero_Particulas = 5
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
-    masa_Particula = 10.0            # En gramos
+    masa_Particula = 1.0            # En gramos
 
     # -- Parametros para la dinamica del sistema -- #
     # LAS COMAS SON IMPORTANTES PORQUE SON ELEMENTOS DE UNA TUPLA, SI NO SE PONEN LAS COMAS, EL COMPILADOR NO LOS RECONOCE COMO ELEMENTOS DE LA TUPLA.
