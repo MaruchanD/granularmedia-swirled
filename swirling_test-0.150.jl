@@ -203,7 +203,7 @@ function simular_sistema()
 
     # -- Parametros de la ejecucion -- #
     dt = 1.0e-4
-    tiempo_total = 200.0 
+    tiempo_total = 1000.0 
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100
     
