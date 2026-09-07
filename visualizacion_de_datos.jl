@@ -41,15 +41,15 @@ plot(tiempo, energia_cinetica,
      legend=posicion_leyenda  # <--- Control de la posición
 )
 
-#plot!(tiempo, energia_potencial_particula_pared, label="Energía Potencial (Partícula-Pared)", linewidth=2)
+plot!(tiempo, energia_potencial_particula_pared, label="Energía Potencial (Partícula-Pared)", linewidth=2)
 
-#plot!(tiempo, energia_potencial_particula_particula, label="Energía Potencial (Partícula-Partícula)", linewidth=2)
+plot!(tiempo, energia_potencial_particula_particula, label="Energía Potencial (Partícula-Partícula)", linewidth=2)
 
 plot!(tiempo, energia_disipada_particula_pared, label="Energía Disipada (Partícula-Pared)", linewidth=2)
 
 plot!(tiempo, energia_disipada_particula_particula, label="Energía Disipada (Partícula-Partícula)", linewidth=2)
 
-plot!(tiempo, energia_total, label="Energía Total", linewidth=2)
+#plot!(tiempo, energia_total, label="Energía Total", linewidth=2)
 
 # 5. Guardar el gráfico
 savefig("graficos/evolucion_energia_151.png")
