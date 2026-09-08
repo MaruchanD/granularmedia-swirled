@@ -391,6 +391,8 @@ function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, parametros_
     contacto_particulas!(particles, parametros_Generales, energia_Mecanica)
 end
 
+# == Funciones auxiliares para obtener informacion de la simulacion == #
+
 # -- Funcion para calcular la velocidad del marco de referencia del recipiente -- #
 function velocidad_marco(tiempo::T, (; amplitud, frecuencia, tau)) where {T}
     
@@ -426,7 +428,31 @@ function calcular_energia_cinetica_laboratorio!(particles::Vector{Particle{N, T}
     energia_Mecanica[1] = E_k
 end
 
-# -- Funciones para exportar datos de la simulacion -- #
+# -- Funcion para obtener la velocidad de rotacion -- #
+function calcular_velocidad_rotacion()
+    r_cm = SVector(0.0, 0.0)
+    v_cm = SVector(0.0, 0.0)
+    num_p = length(particles)
+    for i in 1:num_p
+        p_i = particles[i]
+        r_i = p_i.r
+        v_i = p_i.v
+        r_cm += r_i
+        v_cm += v_i
+    end
+    r_cm = r_cm / num_p
+    v_cm = v_cm / num_p
+    for i in 1:num_p
+        p_i = particles[i]
+        r_i = p_i.r
+        v_i = p_i.v
+        r_rel_i = r_i - r_cm
+        v_rel_i = v_i - r_cm
+    end
+
+end
+
+# == Funciones para exportar datos de la simulacion == #
 
 # Exportacion a OVITO
 function guardar_frame_xyz(archivo::String, particles::Vector{Particle{N, T}}, tiempo::Float64, radio_Recipiente::T) where {N, T}
