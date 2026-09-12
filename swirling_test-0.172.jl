@@ -215,6 +215,9 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
     # Variable para acumular la energia potencial particula-pared
     energia_Potencial_part_pared = 0.0
 
+    # Arreglo que contiene las fuerzas de contacto contra el contenedor de cada una de las particulas
+    F_c = SVector{N, T}[]
+
     # El modelo de fuerzas usado es linear spring-dashpot (resorte + amortiguamiento)
     for p in particles
         d = norm(p.r)                               # Distancia de la particula al centro del recipiente
@@ -264,15 +267,15 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
                 p.alpha += tau / p.inertia
             end
-
-            F_c = F_n + F_t
-
+            push!(F_c, F_n + F_t)
             # Calculo de la energia potencial de la interaccion particula-pared
             energia_Potencial_part_pared += 0.5 * k_n_wall * delta^2
         end
     end
     # Registro de la energia potencial particula-pared un instante de tiempo.
     energia_Mecanica[4] = energia_Potencial_part_pared
+
+    return F_c
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas -- #
