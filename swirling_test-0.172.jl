@@ -230,10 +230,10 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
     energia_Potencial_part_pared = 0.0
 
     # Arreglo que contiene las fuerzas de contacto contra el contenedor de cada una de las particulas
-    F_c = SVector{N, T}[]
+    F_c = [zeros(SVector{N, T}) for i in 1:length(particles)]
 
     # El modelo de fuerzas usado es linear spring-dashpot (resorte + amortiguamiento)
-    for p in particles
+    for (i, p) in enumerate(particles)
         d = norm(p.r)                               # Distancia de la particula al centro del recipiente
         delta = d + p.radius - radio_Recipiente     # Solapamiento de la particula con el recipiente
 
@@ -280,8 +280,9 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 #Calculo y aplicacion del torque debido a la fuerza tangencial
                 tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
                 p.alpha += tau / p.inertia
+
+                F_c[i] = F_n + F_t
             end
-            push!(F_c, F_n + F_t)
             # Calculo de la energia potencial de la interaccion particula-pared
             energia_Potencial_part_pared += 0.5 * k_n_wall * delta^2
         end
