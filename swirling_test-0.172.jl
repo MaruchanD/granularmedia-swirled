@@ -155,7 +155,21 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     # 3. Evaluación de interacciones 
     # Se calculan las fuerzas usando las posiciones y velocidades predichas. 
     # Las variables p.a y p.alpha se sobrescriben con las nuevas aceleraciones reales (estado t + dt).
-    calc_forces!(particles, tiempo + dt, parametros_Generales, energia_Mecanica, radio_Recipiente)
+    #calc_forces!(particles, tiempo + dt, parametros_Generales, energia_Mecanica, radio_Recipiente)
+
+        # Reiniciar aceleraciones
+    for p in particles
+        p.a = @SVector zeros(T, N)
+        # -- Aceleraciones rotacionales -- #
+        p.alpha = 0.0
+    end
+
+    a_inercial = obtener_aceleracion_inercial(tiempo, parametros_Generales)
+    F_c = contenedor_circular!(particles, radio_Recipiente, parametros_Generales, energia_Mecanica)
+
+    for (i, p) in enumerate(particles)
+        p.a = a_inercial + F_c[i]/p.mass
+    end
 
     # 4. Paso Corrector (estado t + dt definitivo)
     for i in 1:num_p
