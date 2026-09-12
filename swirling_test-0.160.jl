@@ -428,30 +428,6 @@ function calcular_energia_cinetica_laboratorio!(particles::Vector{Particle{N, T}
     energia_Mecanica[1] = E_k
 end
 
-# -- Funcion para obtener la velocidad de rotacion -- #
-function calcular_velocidad_rotacion()
-    r_cm = SVector(0.0, 0.0)
-    v_cm = SVector(0.0, 0.0)
-    num_p = length(particles)
-    for i in 1:num_p
-        p_i = particles[i]
-        r_i = p_i.r
-        v_i = p_i.v
-        r_cm += r_i
-        v_cm += v_i
-    end
-    r_cm = r_cm / num_p
-    v_cm = v_cm / num_p
-    for i in 1:num_p
-        p_i = particles[i]
-        r_i = p_i.r
-        v_i = p_i.v
-        r_rel_i = r_i - r_cm
-        v_rel_i = v_i - r_cm
-    end
-
-end
-
 # == Funciones para exportar datos de la simulacion == #
 
 # Exportacion a OVITO

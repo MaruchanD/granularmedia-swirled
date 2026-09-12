@@ -350,16 +350,17 @@ function simular_sistema()
         gamma_t = 1.0e3, #
     )
 
-    # -- Inicializacion del sistema de particulas -- # 
+    # -- Inicializacion del sistema de particulas -- #
+    #=
     sistema = generar_sistema(numero_Particulas, dimension_Sistema, R = radio_Particula, m = masa_Particula)
     generar_configuracion!(sistema, radio_Recipiente)
-
+    =#
     # Sistema de particulas de prueba para verificar funciones o estabilidad de la simulacion
-    #sistema = [Particle(@SVector[1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5), Particle(@SVector[-1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)]
+    sistema = [Particle(@SVector[5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)#=, Particle(@SVector[-1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5)=#]
 
     # -- Parametros de la ejecucion -- #
     dt = 1.0e-4                 # En segundos (s)
-    tiempo_total = 200.0         # En segundos (s)
+    tiempo_total = 50.0         # En segundos (s)
     pasos = round(Int, tiempo_total / dt)
     frecuencia_guardado = 100   # Cada 0.01 segundos (s) se guardan los datos de la simulacion
 
