@@ -3,7 +3,7 @@ using LinearAlgebra
 
 # == Estructura de datos para representar una particula == #
 mutable struct Particle{N, T}
-    # -- Grados de liberta traslacionales -- #
+    # -- Grados de libertad traslacionales -- #
     r::SVector{N, T}      # Posición
     v::SVector{N, T}      # Velocidad
     a::SVector{N, T}      # Aceleración
@@ -14,7 +14,11 @@ mutable struct Particle{N, T}
     theta::T              # Ángulo de orientación
     omega::T              # Velocidad angular
     alpha::T              # Aceleración angular
-    inertia::T            # Momento de inercia 
+    inertia::T            # Momento de inercia
+
+    #-- Variables para registrar la fuerza disipativa -- #
+    f_disip_pared::SVector{N, T}    # Debido a las fuerzas disipativas
+    tau_disip_pared::T  # Debido a los torques disipativos
 end
 
 # == Funciones que generan las configuraciones de particulas. == #
@@ -23,7 +27,7 @@ end
 # Se ponen ciertos valores por defecto para la masa y el radio de las particulas, pero se pueden cambiar al llamar a la funcion.
 function generar_sistema(N::Int, D::Int; m::Float64 = 1.0, R::Float64 = 1.0, theta::Float64 = 0.0, omega::Float64 = 0.0, alpha::Float64 = 0.0)
     # Se estan considerando por ahora que las particulas son discos uniformes, por lo que el momento de inercia es I = m*R^2/2.
-    sistema = [Particle(zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), m, R, theta, omega, alpha, m*R^2/2) for i in 1:N]
+    sistema = [Particle(zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), m, R, theta, omega, alpha, m*R^2/2, zeros(SVector{D, Float64}), 0.0) for i in 1:N]
     println("El sistema de particulas de dimension ", D," con ", N, " particulas fue creado.")
     return sistema
 end
@@ -173,10 +177,10 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     trabajo_Inercial_step!(particles, dt, tiempo, parametros_Generales, v_old, energia_Mecanica)
 
     # 6. Calculo de la Potencia y Energia Disipada pared paso
-    energia_Disipada_pared_step!(particles, v_old, omega_old, parametros_Generales, energia_Mecanica, radio_Recipiente)
+    energia_Disipada_pared_step!(particles, dt, v_old, omega_old, energia_Mecanica)
 
     # 7. Calculo de la Energia Cinetica
-    energia_Cinetica_step!(particles, tiempo, v_old, omega_old, parametros_Generales, energia_Mecanica)
+    energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
 
 end
 
@@ -243,6 +247,11 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
             F_n_mag = max(k_n_wall * delta - gamma_n_wall * v_n_mag, 0.0)   # Esta comparacion evita que la fuerza sea negativa, es decir, evita que la fuerza sea atractiva.
             F_n = F_n_mag * n_wall
 
+            # Calculo del vector de fuerza disipativa
+            F_elastica_mag = k_n_wall * delta
+            F_disip_n = (F_n_mag - F_elastica_mag) * n_wall
+            p.f_disip_pared += F_disip_n
+
             # Aplicacion de la fuerza normal
             p.a += F_n / p.mass
 
@@ -264,14 +273,16 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 va siempre en el sentido contrario al vector t_wall ya que este se calcula en base
                 a la componente tangencial de la velocidad en el punto de contacto de la particula
                 con la pared =#
-                F_t_vec = -F_t_mag * t_wall
+                F_t = -F_t_mag * t_wall
+                p.f_disip_pared += F_t
 
                 # Aplicacion de la fuerza tangecial lineal
-                p.a += F_t_vec / p.mass
+                p.a += F_t / p.mass
 
                 #Calculo y aplicacion del torque debido a la fuerza tangencial
-                tau = r_c_wall[1] * F_t_vec[2] - r_c_wall[2] * F_t_vec[1]
+                tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
                 p.alpha += tau / p.inertia
+                p.tau_disip_pared += tau
             end
 
             # Calculo de la energia potencial de la interaccion particula-pared
@@ -477,60 +488,23 @@ function trabajo_Inercial_step!(particles::Vector{Particle{N, T}}, dt::T, tiempo
     energia_Mecanica[8] += potencia_inercial * dt
 end
 # -- Funcion para calcular la energia disipada por choques con las paredes -- #
-function energia_Disipada_pared_step!(particles::Vector{Particle{N, T}}, v_old::Vector{SVector{N, T}}, omega_old::Vector{T}, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}, radio_Recipiente::T) where {N, T}
-    potencia_disipada_pared = 0.0
-
+function energia_Disipada_pared_step!(particles::Vector{Particle{N, T}}, dt::T, v_old::Vector{SVector{N, T}}, omega_old::Vector{T}, energia_Mecanica::Vector{T}) where {N, T}
     for (i, p) in enumerate(particles)
-        d = norm(p.r)
-        delta = d + p.radius - radio_Recipiente
+        # Velocidade medias en [t, t + dt]
+        v_media = 0.5 * (v_old[i] + p.v)
+        omega_media = 0.5 * (omega_old[i] + p.omega)
 
-        if delta > 0.0
-            n_wall = -p.r / d
-            r_c_wall = -p.radius * n_wall
+        # Potencia disipada ()
+        pot_traslacional = dot(p.f_disip_pared, v_media)
+        pot_rotacional = p.tau_disip_pared * omega_media
 
-            #=
-            # Velocidad media en el intervalo [t, t + dt]
-            v_tras_media = 0.5 * (v_old[i] + p.v)
-            omega_media = 0.5 * (omega_old[i] + p.omega)
-            v_rot_media = omega_media * SVector(-r_c_wall[2], r_c_wall[1])
-            v_cont_media = v_tras_media + v_rot_media
+        # Acumula como energia disipada
+        energia_Mecanica[5] += -(pot_traslacional + pot_rotacional) * dt
 
-            # Componentes de la velocidad media
-            v_n_media_mag = dot(v_cont_media, n_wall)
-            v_t_media_vec = v_cont_media - v_n_media_mag * n_wall
-            v_t_media_mag = norm(v_t_media_vec)=#
-
-            # Calculo de las componentes de la velocidad en el paso t
-            v_rot_old = omega_old[i] * SVector(-r_c_wall[2], r_c_wall[1])
-            v_cont_old = v_old[i] + v_rot_old
-            v_n_old_mag = dot(v_cont_old, n_wall)
-            v_t_old = v_cont_old - v_n_old_mag * n_wall
-            v_t_old_mag = norm(v_t_old)
-
-            # Calculo de las componentes de la velocidad en el paso t+dt
-            v_rot_new = p.omega * SVector(-r_c_wall[2], r_c_wall[1])
-            v_cont_new = p.v + v_rot_new
-            v_n_new_mag = dot(v_cont_new, n_wall)
-            v_t_new = v_cont_new - v_n_new_mag * n_wall
-            v_t_new_mag = norm(v_t_new)
-
-            # Término normal viscoso disipado
-            potencia_disipada_pared += 0.5 * gamma_n_wall * (v_n_old_mag^2 + v_n_new_mag^2)
-
-            #= Término tangencial por fricción
-            # Se utiliza la fuerza tangencial corregida en t + dt
-            F_n_mag = max(k_n_wall * delta - gamma_n_wall * v_n_media_mag, 0.0)
-            F_t_prueba = gamma_t_wall * v_t_media_mag
-            F_t_coulomb = mu_wall * F_n_mag
-            F_t_mag = min(F_t_prueba, F_t_coulomb)
-
-            #Termina tangencial disipado
-            potencia_disipada_pared += F_t_mag * v_t_media_mag
-            =#
-        end
+        #Reiniciar los acumuladores
+        p.f_disip_pared = @SVector zeros(T, N)
+        p.tau_disip_pared = 0.0
     end
-
-    energia_Mecanica[5] += potencia_disipada_pared * dt
 end
 
 # == Funciones para exportar datos de la simulacion == #
@@ -578,7 +552,7 @@ function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vecto
     balance = (energia_Mecanica_Total + energia_Disipada_Total) - trabajo_Inercial
 
     open(archivo, "a") do io
-        println(io,"$tiempo,","$energia_Cinetica_relativa,","$energia_Pot_pared,","$energia_Disip_pared,","$energia_Pot_part,","$energia_Disip_part,","$energia_Mecanica_Total,","$trabajo_Inercial,","$balance")
+        println(io,"$tiempo,","$energia_Cinetica_relativa,","$energia_Pot_pared,","$energia_Disip_pared,","$energia_Pot_part,","$energia_Disip_part,","$energia_Mecanica_Total,","$trabajo_Inercial,","$balance,","$energia_Cinetica")
     end
 end
 
@@ -630,8 +604,10 @@ function simular_sistema()
     =#
     # Sistema de particulas de prueba para verificar funciones o estabilidad de la simulacion
     
-    sistema = [Particle(@SVector[5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2)#=, 
-    Particle(@SVector[-1.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2)=#]
+    sistema = [
+        Particle(@SVector[5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2, zeros(SVector{2, Float64}), 0.0)#=, 
+        Particle(@SVector[-5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2, zeros(SVector{2, Float64}), 0.0)=#
+    ]
     
     # -- Parametros de la ejecucion -- #
     dt = parametros_Generales.dt                    # En segundos (s)
@@ -670,7 +646,7 @@ function simular_sistema()
     println("Iniciando movimiento swirled...")
     
     # -- Bucle principal de la simulacion -- #
-    for paso in 1:pasos
+    for paso in 0:pasos
         # -- Integracion de las ecuaciones de movimiento mediante el metodo de Velocity Verlet -- #
         velocity_verlet_step!(sistema, dt, fuerza_total!, dt * paso, parametros_Generales, energia_Mecanica, radio_Recipiente)
         
