@@ -155,21 +155,7 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     # 3. Evaluación de interacciones 
     # Se calculan las fuerzas usando las posiciones y velocidades predichas. 
     # Las variables p.a y p.alpha se sobrescriben con las nuevas aceleraciones reales (estado t + dt).
-    #calc_forces!(particles, tiempo + dt, parametros_Generales, energia_Mecanica, radio_Recipiente)
-
-        # Reiniciar aceleraciones
-    for p in particles
-        p.a = @SVector zeros(T, N)
-        # -- Aceleraciones rotacionales -- #
-        p.alpha = 0.0
-    end
-
-    a_inercial = obtener_aceleracion_inercial(tiempo, parametros_Generales)
-    F_c = contenedor_circular!(particles, radio_Recipiente, parametros_Generales, energia_Mecanica)
-
-    for (i, p) in enumerate(particles)
-        p.a = a_inercial + F_c[i]/p.mass
-    end
+    calc_forces!(particles, tiempo + dt, parametros_Generales, energia_Mecanica, radio_Recipiente)
 
     # 4. Paso Corrector (estado t + dt definitivo)
     for i in 1:num_p
@@ -225,22 +211,18 @@ function excitacion_orbital_rampa!(particles::Vector{Particle{N,T}}, tiempo::T, 
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas y el contenedor circular -- #
-function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
+function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
     # Variable para acumular la energia potencial particula-pared
     energia_Potencial_part_pared = 0.0
 
-    # Arreglo que contiene las fuerzas de contacto contra el contenedor de cada una de las particulas
-    F_c = [zeros(SVector{N, T}) for i in 1:length(particles)]
-
     # El modelo de fuerzas usado es linear spring-dashpot (resorte + amortiguamiento)
-    for (i, p) in enumerate(particles)
+    for p in particles
         d = norm(p.r)                               # Distancia de la particula al centro del recipiente
         delta = d + p.radius - radio_Recipiente     # Solapamiento de la particula con el recipiente
 
         # Aplicacion de las fuerzas de contacto normales y tangenciales entre particulas y contenedor
         if delta > 0.0
-            n_wall = -p.r / d                       # Direccion normal hacia el centro del recipiente
-            t_wall = SVector(-n_wall[2], n_wall[1]) # Direccion tangencial
+            n_wall = -p.r / d               # Direccion normal hacia el centro del recipiente
             r_c_wall = -p.radius * n_wall   # Vector desde el centro de la particula hasta el punto de contacto con la pared
             
             # Velocidad rotacional en el punto de contacto
@@ -261,12 +243,19 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
             F_n_mag = max(k_n_wall * delta - gamma_n_wall * v_n_mag, 0.0)   # Esta comparacion evita que la fuerza sea negativa, es decir, evita que la fuerza sea atractiva.
             F_n = F_n_mag * n_wall
 
+            # Aplicacion de la fuerza normal
+            p.a += F_n / p.mass
+
+            # Fuerza de contacto tangencial con la pared
             if v_t_mag > 0.0
-                # Fuerza de contacto tangencial con la pared
+                # Vector Tangencial Unitario
+                t_wall = v_t_vec / v_t_mag
+
                 # Fuerza tangencial de prueba con un termino viscoso
                 F_t_mag_prueba = gamma_t_wall * v_t_mag
+
                 # Limite de Coulomb
-                # La minima fuerza permitida depende de la magnitud de la fuerza normal calculada
+                # La maxima fuerza permitida depende de la magnitud de la fuerza normal calculada
                 F_t_mag_coulomb = mu_wall * F_n_mag
 
                 # La magnitud final habra de ser el menor valor
@@ -275,22 +264,22 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 va siempre en el sentido contrario al vector t_wall ya que este se calcula en base
                 a la componente tangencial de la velocidad en el punto de contacto de la particula
                 con la pared =#
-                F_t = -F_t_mag * t_wall
+                F_t_vec = -F_t_mag * t_wall
+
+                # Aplicacion de la fuerza tangecial lineal
+                p.a += F_t_vec / p.mass
 
                 #Calculo y aplicacion del torque debido a la fuerza tangencial
-                tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
+                tau = r_c_wall[1] * F_t_vec[2] - r_c_wall[2] * F_t_vec[1]
                 p.alpha += tau / p.inertia
-
-                F_c[i] = F_n + F_t
             end
+
             # Calculo de la energia potencial de la interaccion particula-pared
             energia_Potencial_part_pared += 0.5 * k_n_wall * delta^2
         end
     end
     # Registro de la energia potencial particula-pared un instante de tiempo.
     energia_Mecanica[4] = energia_Potencial_part_pared
-
-    return F_c
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas -- #
