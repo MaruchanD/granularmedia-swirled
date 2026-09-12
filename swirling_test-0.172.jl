@@ -211,7 +211,7 @@ function excitacion_orbital_rampa!(particles::Vector{Particle{N,T}}, tiempo::T, 
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas y el contenedor circular -- #
-function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
+function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
     # Variable para acumular la energia potencial particula-pared
     energia_Potencial_part_pared = 0.0
 
@@ -222,7 +222,8 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
 
         # Aplicacion de las fuerzas de contacto normales y tangenciales entre particulas y contenedor
         if delta > 0.0
-            n_wall = -p.r / d               # Direccion normal hacia el centro del recipiente
+            n_wall = -p.r / d                       # Direccion normal hacia el centro del recipiente
+            t_wall = SVector(-n_wall[2], n_wall[1]) # Direccion tangencial
             r_c_wall = -p.radius * n_wall   # Vector desde el centro de la particula hasta el punto de contacto con la pared
             
             # Velocidad rotacional en el punto de contacto
@@ -243,19 +244,12 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
             F_n_mag = max(k_n_wall * delta - gamma_n_wall * v_n_mag, 0.0)   # Esta comparacion evita que la fuerza sea negativa, es decir, evita que la fuerza sea atractiva.
             F_n = F_n_mag * n_wall
 
-            # Aplicacion de la fuerza normal
-            p.a += F_n / p.mass
-
-            # Fuerza de contacto tangencial con la pared
             if v_t_mag > 0.0
-                # Vector Tangencial Unitario
-                t_wall = v_t_vec / v_t_mag
-
+                # Fuerza de contacto tangencial con la pared
                 # Fuerza tangencial de prueba con un termino viscoso
                 F_t_mag_prueba = gamma_t_wall * v_t_mag
-
                 # Limite de Coulomb
-                # La maxima fuerza permitida depende de la magnitud de la fuerza normal calculada
+                # La minima fuerza permitida depende de la magnitud de la fuerza normal calculada
                 F_t_mag_coulomb = mu_wall * F_n_mag
 
                 # La magnitud final habra de ser el menor valor
@@ -264,15 +258,14 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 va siempre en el sentido contrario al vector t_wall ya que este se calcula en base
                 a la componente tangencial de la velocidad en el punto de contacto de la particula
                 con la pared =#
-                F_t_vec = -F_t_mag * t_wall
-
-                # Aplicacion de la fuerza tangecial lineal
-                p.a += F_t_vec / p.mass
+                F_t = -F_t_mag * t_wall
 
                 #Calculo y aplicacion del torque debido a la fuerza tangencial
-                tau = r_c_wall[1] * F_t_vec[2] - r_c_wall[2] * F_t_vec[1]
+                tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
                 p.alpha += tau / p.inertia
             end
+
+            F_c = F_n + F_t
 
             # Calculo de la energia potencial de la interaccion particula-pared
             energia_Potencial_part_pared += 0.5 * k_n_wall * delta^2
