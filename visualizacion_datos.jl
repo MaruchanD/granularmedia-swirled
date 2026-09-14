@@ -6,12 +6,11 @@ using DataFrames
 df = CSV.read("datos/datos_swirling_172.csv", DataFrame; header=false)
 
 tiempo            = df[:, 1]
-energia_cinetica = df[:, 2]
-energia_potencial = df[:, 3]
-energia_disipada = df[:, 4]
-energia_mecanica_total = df[:, 7]
-trabajo_inercial = df[:, 8]
-balance = df[:, 9]
+energia_cinetica_relativa = df[:, 2]
+energia_cinetica_rotacional = df[:, 3]
+trabajo_inercial = df[:, 4]
+trabajo_pared = df[:, 5]
+balance = df[:, 6]
 
 # 2. Configuración de escalas, límites y leyendas
 tipo_escala_x    = :identity
@@ -24,8 +23,8 @@ limites_y_p2     = :auto          # límites para el segundo gráfico
 posicion_leyenda = :outertop
 
 # 3. Primer gráfico (Energía Cinética y Potencial)
-p1 = plot(tiempo, energia_cinetica,
-          label="Energia Cinetica",
+p1 = plot(tiempo, energia_cinetica_relativa,
+          label="Energia Cinetica Relativa",
           ylabel="Energía (E)",
           title="Componentes de Energía",
           linewidth=2,
@@ -40,19 +39,19 @@ plot!(p1, tiempo, energia_potencial,
       label="Energía Potencial",
       linewidth=2
 )
-
-plot!(p1, tiempo, energia_mecanica_total,
-      label="Energía Mecanica Total",
-      linewidth=2
-)
 =#
-plot!(p1, tiempo, energia_disipada,
-      label="Energia Disipada",
+plot!(p1, tiempo, energia_cinetica_rotacional,
+      label="Energía Cinetica Rotacional",
       linewidth=2
 )
 
 plot!(p1, tiempo, trabajo_inercial,
       label="Trabajo Inercial",
+      linewidth=2
+)
+
+plot!(p1, tiempo, trabajo_pared,
+      label="Trabajo Pared",
       linewidth=2
 )
 
@@ -67,7 +66,20 @@ p2 = plot(tiempo, balance,
           yscale=tipo_escala_y,
           xlims=limites_x,
           ylims=limites_y_p2,
-          legend=posicion_leyenda)
+          legend=posicion_leyenda
+)
+#=
+p3 = plot(tiempo, energia_cinetica_abs, 
+      label="Energia Cinetica Real", 
+      ylabel = "Energia (E)",
+      linewidth=2,
+      xscale=tipo_escala_x,
+      yscale=tipo_escala_y,
+      xlims=limites_x,
+      ylims=limites_y_p1,
+      legend=posicion_leyenda
+)
+=#
 
 # 5. Combinar ambos paneles en una sola imagen (2 filas, 1 columna)
 # link=:x sincroniza el rango del eje temporal en ambas gráficas
