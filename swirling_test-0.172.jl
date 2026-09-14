@@ -16,9 +16,9 @@ mutable struct Particle{N, T}
     alpha::T              # Aceleración angular
     inertia::T            # Momento de inercia
 
-    #-- Variables para registrar la fuerza disipativa -- #
-    f_disip_pared::SVector{N, T}    # Debido a las fuerzas disipativas
-    tau_disip_pared::T  # Debido a los torques disipativos
+    #-- Variables para registrar la fuerza de contacto y el torque respecto a la pared-- #
+    f_pared::SVector{N, T}
+    tau_pared::T 
 end
 
 # == Funciones que generan las configuraciones de particulas. == #
@@ -145,6 +145,8 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     alpha_old = [p.alpha for p in particles] # Se guarda la aceleracion angular del paso anterior
     v_old = [p.v for p in particles] # Se guarda la velocidad real al inicio del paso
     omega_old = [p.omega for p in particles] # Se guarda la velocidad angular al inicio del paso
+    f_pared_old = [p.f_pared for p in particles] # Se guarda la fuerza de contacto con la pared al inicio del paso
+    tau_pared_old = [p.tau_pared for p in particles] # Se guarda el torque con la pared al inicio del paso
 
     # 2. Paso Predictor (estado t + dt estimado)
     for p in particles
@@ -176,8 +178,8 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     # 5. Calculo del Trabajo Inercial del paso
     trabajo_Inercial_step!(particles, dt, tiempo, parametros_Generales, v_old, energia_Mecanica)
 
-    # 6. Calculo de la Potencia y Energia Disipada pared paso
-    energia_Disipada_pared_step!(particles, dt, v_old, omega_old, energia_Mecanica)
+    # 6. Calculo del Trabajo de la fuerza de contacto con la pared (y el torque)
+    trabajo_Pared_step!(particles, dt, v_old, omega_old, f_pared_old, tau_pared_old, energia_Mecanica)
 
     # 7. Calculo de la Energia Cinetica
     energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
@@ -247,13 +249,7 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
             F_n_mag = max(k_n_wall * delta - gamma_n_wall * v_n_mag, 0.0)   # Esta comparacion evita que la fuerza sea negativa, es decir, evita que la fuerza sea atractiva.
             F_n = F_n_mag * n_wall
 
-            # Calculo del vector de fuerza disipativa
-            F_elastica_mag = k_n_wall * delta
-            F_disip_n = (F_n_mag - F_elastica_mag) * n_wall
-            p.f_disip_pared += F_disip_n
-
-            # Aplicacion de la fuerza normal
-            p.a += F_n / p.mass
+            F_contacto_pared = F_n
 
             # Fuerza de contacto tangencial con la pared
             if v_t_mag > 0.0
@@ -274,23 +270,18 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
                 a la componente tangencial de la velocidad en el punto de contacto de la particula
                 con la pared =#
                 F_t = -F_t_mag * t_wall
-                p.f_disip_pared += F_t
-
-                # Aplicacion de la fuerza tangecial lineal
-                p.a += F_t / p.mass
+                F_contacto_pared += F_t
 
                 #Calculo y aplicacion del torque debido a la fuerza tangencial
                 tau = r_c_wall[1] * F_t[2] - r_c_wall[2] * F_t[1]
                 p.alpha += tau / p.inertia
-                p.tau_disip_pared += tau
+                p.tau_pared = tau
             end
-
-            # Calculo de la energia potencial de la interaccion particula-pared
-            energia_Potencial_part_pared += 0.5 * k_n_wall * delta^2
+            # Aplicar a la aceleración y registrar en la memoria de la partícula
+            p.a += F_contacto_pared / p.mass
+            p.f_pared = F_contacto_pared
         end
     end
-    # Registro de la energia potencial particula-pared un instante de tiempo.
-    energia_Mecanica[4] = energia_Potencial_part_pared
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas -- #
@@ -488,23 +479,23 @@ function trabajo_Inercial_step!(particles::Vector{Particle{N, T}}, dt::T, tiempo
     energia_Mecanica[8] += potencia_inercial * dt
 end
 # -- Funcion para calcular la energia disipada por choques con las paredes -- #
-function energia_Disipada_pared_step!(particles::Vector{Particle{N, T}}, dt::T, v_old::Vector{SVector{N, T}}, omega_old::Vector{T}, energia_Mecanica::Vector{T}) where {N, T}
+function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, v_old::Vector{SVector{N, T}}, omega_old::Vector{T}, f_pared_old::Vector{SVector{N, T}}, tau_pared_old::Vector{T}, energia_Mecanica::Vector{T}) where {N, T}
+    trabajo_pared_paso = 0.0
     for (i, p) in enumerate(particles)
-        # Velocidade medias en [t, t + dt]
         v_media = 0.5 * (v_old[i] + p.v)
         omega_media = 0.5 * (omega_old[i] + p.omega)
+        f_pared_media = 0.5 * (f_pared_old[i] + p.f_pared)
+        tau_pared_media = 0.5 * (tau_pared_old[i] + p.tau_pared)
+        
+        # Potencia mecánica de la pared (incluye tanto la elasticidad como la disipación)
+        potencia_traslacional = dot(f_pared_media, v_media)
+        potencia_rotacional = tau_pared_media * omega_media
+        
+        trabajo_pared_paso += (potencia_traslacional + potencia_rotacional) * dt
 
-        # Potencia disipada ()
-        pot_traslacional = dot(p.f_disip_pared, v_media)
-        pot_rotacional = p.tau_disip_pared * omega_media
-
-        # Acumula como energia disipada
-        energia_Mecanica[5] += -(pot_traslacional + pot_rotacional) * dt
-
-        #Reiniciar los acumuladores
-        p.f_disip_pared = @SVector zeros(T, N)
-        p.tau_disip_pared = 0.0
     end
+    # Almacenar en la nueva posición del arreglo (índice 10)
+    energia_Mecanica[10] += trabajo_pared_paso
 end
 
 # == Funciones para exportar datos de la simulacion == #
@@ -528,7 +519,7 @@ function guardar_frame_xyz(archivo::String, particles::Vector{Particle{N, T}}, t
         println(io, "Contenedor 0.0 0.0 0.0 $radio_Recipiente 0.0 0.0")
     end
 end
-
+#=
 # -- Funcion para exportar datos extraidos de la simulacion -- #
 function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
     energia_Cinetica_t = energia_Mecanica[1]            # Energia cinetica traslacional
@@ -553,6 +544,26 @@ function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vecto
 
     open(archivo, "a") do io
         println(io,"$tiempo,","$energia_Cinetica_relativa,","$energia_Pot_pared,","$energia_Disip_pared,","$energia_Pot_part,","$energia_Disip_part,","$energia_Mecanica_Total,","$trabajo_Inercial,","$balance,","$energia_Cinetica")
+    end
+end
+=#
+
+function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
+    energia_Cinetica_r = energia_Mecanica[2]
+    trabajo_Inercial = energia_Mecanica[8]              
+    energia_Cinetica_relativa = energia_Mecanica[9]     
+    trabajo_Pared = energia_Mecanica[10]
+
+    # K_total = K_traslacional_relativa + K_rotacional
+    energia_Cinetica_Total = energia_Cinetica_relativa + energia_Cinetica_r
+    
+    # Teorema del Trabajo y la Energía: ΔK = W_neto
+    # Como la partícula parte del reposo, K_inicial = 0.0
+    balance_diagnostico = energia_Cinetica_Total - trabajo_Inercial - trabajo_Pared
+
+    open(archivo, "a") do io
+        # Imprime los datos que consideres, pero observa puntualmente balance_diagnostico
+        println(io, "$tiempo,$energia_Cinetica_relativa,$energia_Cinetica_r,$trabajo_Inercial,$trabajo_Pared,$balance_diagnostico")
     end
 end
 
@@ -583,8 +594,8 @@ function simular_sistema()
         gamma_n_wall = 1.0e3, #
 
         # -- Tangenciales -- #
-        gamma_t_wall = 0.0e3, #
-        mu_wall = 0.0, #
+        gamma_t_wall = 1.0e3, #
+        mu_wall = 0.5, #
 
         # -- Parametros de colisiones particula-particula -- #
         
@@ -640,7 +651,8 @@ function simular_sistema()
 
         # Variables de energia relacionadas con el marco no inercial
         0.0,    # [8] Trabajo inercial acumulado
-        0.0     # [9] Energia cinetica relativa
+        0.0,    # [9] Energia cinetica relativa
+        0.0     # [10] Trabajo Pared acumulado
         ]
 
     println("Iniciando movimiento swirled...")
