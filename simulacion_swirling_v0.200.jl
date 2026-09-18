@@ -418,11 +418,17 @@ end
 
 # -- Funcion que calcula todas las fuerzas que actuan sobre las particulas del sistema -- #
 function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, parametros_Generales::NamedTuple, energia_Mecanica::Vector{T}, radio_Recipiente::T) where {N, T}
-    # Reiniciar aceleraciones
+    # Reinicio de vectores
     for p in particles
+        # -- Aceleraciones traslacionales -- #
         p.a = @SVector zeros(T, N)
         # -- Aceleraciones rotacionales -- #
         p.alpha = 0.0
+        # -- Fuerzas del paso actual (t+dt) -- #
+        p.f_pared = @SVector zeros(T, N)
+        p.tau_pared = 0.0
+        p.f_part = @SVector zeros(T, N)
+        p.tau_part = 0.0
     end
 
     # -- Aceleracion inercial asociado al movimiento de swirling del recipiente -- #
