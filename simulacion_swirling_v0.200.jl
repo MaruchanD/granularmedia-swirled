@@ -378,9 +378,10 @@ function interaccion_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, 
                 F_n_mag = max(k_n * delta - gamma_n * v_n_mag, 0.0)
                 F_n = F_n_mag * n_ij
 
-                # Aplicacion de la fuerza normal (por tercera ley de Newton)
-                particles[i].a += F_n / p_i.mass
-                particles[j].a -= F_n / p_j.mass
+                # Fuerza y torque total
+                F_total_ij = F_n
+                tau_i_total = 0.0
+                tau_j_total = 0.0
 
                 # Fuerza Tangencial
                 if v_t_mag > 0.0
@@ -395,22 +396,34 @@ function interaccion_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, 
 
                     # La magnitud final es el menor de los dos valores
                     F_t_mag = min(F_t_mag_prueba, F_t_mag_coulomb)
-                    F_t_vec = -F_t_mag * t_ij                        # Revisar el signo de esta expresion.
-
-                    # Aplicacion de la fuerza tangencial
-                    particles[i].a += F_t_vec / p_i.mass
-                    particles[j].a -= F_t_vec / p_j.mass
+                    F_t = -F_t_mag * t_ij                        # Revisar el signo de esta expresion.
 
                     # Calculo y aplicacion del torque debido a la fuerza tangencial
                     # Torque sobre la particula i
                     tau_i = r_ci[1] * F_t_vec[2] - r_ci[2] * F_t_vec[1]
-                    particles[i].alpha += tau_i / p_i.inertia
 
                     # Torque sobre la particula j
                     # La fuerza tangencial sobre la particula j es opuesta a la de la particula i.
                     tau_j = r_cj[1]*(-F_t_vec[2]) - r_cj[2]*(-F_t_vec[1])
-                    particles[j].alpha += tau_j / p_j.inertia
+
+                    # Se suma la parte tangencial ahora
+                    F_total_ij += F_t
+                    tau_i_total = tau_i
+                    tau_j_total = tau_j
                 end
+                # Aplicación en aceleración (Sobre i y j via 3era ley de Newton)
+                particles[i].a += F_total_ij / p_i.mass
+                particles[j].a -= F_total_ij / p_j.mass
+                
+                particles[i].alpha += tau_i_total / p_i.inertia
+                particles[j].alpha += tau_j_total / p_j.inertia
+
+                # Registro para el balance de energía
+                particles[i].f_part += F_total_ij
+                particles[j].f_part -= F_total_ij
+                
+                particles[i].tau_part += tau_i_total
+                particles[j].tau_part += tau_j_total
             end
         end
     end
