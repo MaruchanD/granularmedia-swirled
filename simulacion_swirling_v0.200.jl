@@ -654,9 +654,12 @@ end
 
 # -- Funcion principal para simular el sistema de particulas -- #
 function simular_sistema()
+    # -- Solicitud dinámica del número de partículas al usuario -- #
+    print("Introduzca el número de partículas del sistema: ")
+    numero_Particulas = parse(Int, readline())
+
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 90
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -712,13 +715,18 @@ function simular_sistema()
     frecuencia_guardado = 100                       # Cada 0.01 segundos (s) se guardan los datos de la simulacion
 
     # -- Archivos de salida -- #
+    amp = parametros_Generales.amplitud
+    frec = parametros_Generales.frecuencia
     # Nombre de los archivos de salida para los datos de la simulacion y para los datos extraidos de la simulacion
     # MALDITA SEA, ACUERDATE DE CAMBIAR EL NOMBRE DEL ARCHIVO DE SALIDA, NO TE VUELVAS A EQUIVOCAR
-    archivo_salida_1 = "resultados/simulacion_programa_V0-200.xyz"
-    archivo_salida_2 = "datos/datos_energia_simulacion_V0-200.csv"
+    archivo_salida_1 = "resultados/simulacion_N$(numero_Particulas)_A$(amp)_F$(frecuencia).xyz"
+    archivo_salida_2 = "datos/datos_energia_N$(numero_Particulas)_A$(amp)_F$(frecuencia).csv"
+    archivo_salida_3 = "datos/datos_macroscopicos_N$(numero_Particulas)_A$(amp)_F$(frec).csv"
+
     # Apertura y limpieza de los archivos de salida
-    open(archivo_salida_1, "w") do io end # Limpiar archivo si existe
-    open(archivo_salida_2, "w") do io end # Limpiar archivo si existe
+    open(archivo_salida_1, "w") do io end
+    open(archivo_salida_2, "w") do io end
+    open(archivo_salida_2, "w") do io end
 
     # -- Arreglo para registrar la energia del sistema -- # 
     energia_Mecanica = [
@@ -744,12 +752,20 @@ function simular_sistema()
         
         # -- Guardado de los datos de la simulacion y de los datos extraidos de la simulacion -- #
         if paso % frecuencia_guardado == 0
-            guardar_frame_xyz(archivo_salida_1, sistema, paso * dt, radio_Recipiente)
-            guardar_datos(archivo_salida_2, paso * dt, energia_Mecanica)
+            tiempo_actual = paso * dt
+
+            # 1. Cálculos macroscópicos del clúster
+            f_rot = frecuencia_rotacion_cluster(sistema)
+            I_cluster = inercia_cluster(sistema)
+
+            # 2. Guardado en archivos
+            guardar_frame_xyz(archivo_salida_1, sistema, tiempo_actual, radio_Recipiente)
+            guardar_datos(archivo_salida_2, tiempo_actual, energia_Mecanica)
+            guardar_datos_macroscopicos(archivo_salida_3, tiempo_actual, numero_Particulas, f_rot, I_cluster)
         end
     end
     
-    println("¡Simulación terminada!\nArchivos generados: $archivo_salida_1 y $archivo_salida_2")
+    println("¡Simulación terminada!\nArchivos generados:\n- $archivo_salida_1\n- $archivo_salida_2\n- $archivo_salida_3")
 end
 
 simular_sistema()
