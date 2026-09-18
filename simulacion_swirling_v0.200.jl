@@ -187,13 +187,17 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     num_p = length(particles)
 
     # 1. Almacenar estados anteriores (estado t)
-    a_old = [p.a for p in particles] # Se guarda la aceleracion del paso anterior
-    alpha_old = [p.alpha for p in particles] # Se guarda la aceleracion angular del paso anterior
-    v_old = [p.v for p in particles] # Se guarda la velocidad real al inicio del paso
-    omega_old = [p.omega for p in particles] # Se guarda la velocidad angular al inicio del paso
-    f_pared_old = [p.f_pared for p in particles] # Se guarda la fuerza de contacto con la pared al inicio del paso
-    tau_pared_old = [p.tau_pared for p in particles] # Se guarda el torque con la pared al inicio del paso
-
+    for p in particles
+        p.v_old = p.v
+        p.omega_old = p.omega
+        p.a_old = p.a
+        p.alpha_old = p.alpha
+        
+        p.f_pared_old = p.f_pared
+        p.tau_pared_old = p.tau_pared
+        p.f_part_old = p.f_part
+        p.tau_part_old = p.tau_part
+    end
     # 2. Paso Predictor (estado t + dt estimado)
     for p in particles
         # -- Predicción de variables de traslacion -- #
@@ -207,18 +211,16 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     # 3. Evaluación de interacciones 
     # Se calculan las fuerzas usando las posiciones y velocidades predichas. 
     # Las variables p.a y p.alpha se sobrescriben con las nuevas aceleraciones reales (estado t + dt).
-    calc_forces!(particles, tiempo + dt, parametros_Generales, energia_Mecanica, radio_Recipiente)
+    calc_forces!(particles, tiempo + dt, parametros_Generales, radio_Recipiente)
 
     # 4. Paso Corrector (estado t + dt definitivo)
-    for i in 1:num_p
-        p = particles[i]
-        
+    for p in particles
         # -- Corrección de variables de traslacion -- #
         # Esto es v_new = v_pred + 0.5 * (a_new - a_old) * dt
-        p.v = p.v + 0.5 * (p.a - a_old[i]) * dt
+        p.v = p.v + 0.5 * (p.a - p.a_old) * dt
 
         # -- Corrección de variables de rotacion -- #
-        p.omega = p.omega + 0.5 * (p.alpha - alpha_old[i]) * dt
+        p.omega = p.omega + 0.5 * (p.alpha - p.alpha_old) * dt  # No sé explicar el signo menos
     end
 
     # 5. Calculo del Trabajo Inercial del paso
@@ -227,7 +229,10 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     # 6. Calculo del Trabajo de la fuerza de contacto con la pared (y el torque)
     trabajo_Pared_step!(particles, dt, v_old, omega_old, f_pared_old, tau_pared_old, energia_Mecanica)
 
-    # 7. Calculo de la Energia Cinetica
+    # 7. Calculo del Trabajo de la fuerza de contacto entre particulas
+    trabajo_Particulas_step!()
+
+    # 8. Calculo de la Energia Cinetica
     energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
 
 end
@@ -430,7 +435,7 @@ function interaccion_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, 
 end
 
 # -- Funcion que calcula todas las fuerzas que actuan sobre las particulas del sistema -- #
-function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, parametros_Generales::NamedTuple, energia_Mecanica::Vector{T}, radio_Recipiente::T) where {N, T}
+function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, parametros_Generales::NamedTuple, radio_Recipiente::T) where {N, T}
     # Reinicio de vectores
     for p in particles
         # -- Aceleraciones traslacionales -- #
@@ -681,22 +686,17 @@ function simular_sistema()
 
     # -- Arreglo para registrar la energia del sistema -- # 
     energia_Mecanica = [
-        0.0,    # [1] Energia cinetica traslacional
+        0.0,    # [1] Energia cinetica traslacional real
         0.0,    # [2] Energia cinetica rotacional
-        0.0,    # [3] Energia cinetica total
+        0.0,    # [3] Energia cinetica relativa
+        0.0,    # [4] Energia cinetica total real
 
-        # Variables de energia relacionadas con la interaccion particula-pared
-        0.0,    # [4] Energia potencial total particula-pared
-        0.0,    # [5] Energia disipada total por friccion particula-pared
+        # Variables energia debidas al trabajo de las fuerzas de contacto
+        0.0,    # [5] Trabajo Pared acumulado
+        0.0,    # [6] Trabajo particulas acumulado
 
-        # Variables de energia relacionadas con la interaccion particula-particula
-        0.0,    # [6] Energia potencial total particula-particula
-        0.0,    # [7] Energia disipada total por friccion particula-particula
-
-        # Variables de energia relacionadas con el marco no inercial
-        0.0,    # [8] Trabajo inercial acumulado
-        0.0,    # [9] Energia cinetica relativa
-        0.0     # [10] Trabajo Pared acumulado
+        # Variable de energia debido al trabajo de la fuerza inercial
+        0.0     # [7] Trabajo inercial
         ]
 
     println("Iniciando movimiento swirled...")
