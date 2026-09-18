@@ -230,7 +230,7 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     trabajo_Pared_step!(particles, dt, energia_Mecanica)
 
     # 7. Calculo del Trabajo de la fuerza de contacto entre particulas
-    #trabajo_Particulas_step!()
+    trabajo_Particulas_step!()
 
     # 8. Calculo de la Energia Cinetica
     energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
@@ -489,7 +489,7 @@ function energia_Cinetica_step!(particles::Vector{Particle{N, T}}, tiempo::T, pa
     E_k_traslacional = 0.0
     E_k_rotacional = 0.0
     
-    for (i,p) in enumerate(particles)
+    for p in particles
         # Velocidad absoluta de la particual en el laboratorio
         v_abs = p.v + V_f
 
@@ -527,7 +527,9 @@ function trabajo_Inercial_step!(particles::Vector{Particle{N, T}}, dt::T, tiempo
 end
 # -- Funcion para calcular la energia disipada por choques con las paredes -- #
 function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, energia_Mecanica::Vector{T}) where {N, T}
+    # Variable para acumular trabajo dentro del bucle
     trabajo_pared_paso = 0.0
+
     for p in particles
         v_media = 0.5 * (p.v_old + p.v)
         omega_media = 0.5 * (p.omega_old + p.omega)
@@ -541,8 +543,25 @@ function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, energia_M
         trabajo_pared_paso += (potencia_traslacional + potencia_rotacional) * dt
 
     end
-    # Almacenar en la nueva posición del arreglo (índice 10)
+    # Almacenar en el arreglo de energia
     energia_Mecanica[5] += trabajo_pared_paso
+end
+
+# -- Funcion para calcular la energia disipada por choques entre particulas -- #
+function trabajo_Particulas_step!(particles::Vector{Particle{N, T}}, dt::T, energia_Mecanica::Vector{T}) where {N, T}
+    # Variable para acumular el trabajo dentro del bucle
+    trabajo_part_paso = 0.0
+    for p in particles
+        v_media = 0.5 * (p.v_old + p.v)
+        omega_media = 0.5 * (p.omega_old + p.omega)
+        f_part_media = 0.5 * (p.f_part_old + p.f_part)
+        tau_part_media = 0.5 * (p.tau_part_old + p.tau_part)
+
+        # Potencia mecanica entre particulas (elasticidad y disipacion)
+        trabajo_part_paso += (dot(f_part_media, v_media) + tau_part_media * omega_media) * dt
+    end
+    # Almacenar en el arreglo de energía
+    energia_Mecanica[6] += trabajo_part_paso
 end
 
 # == Funciones para exportar datos de la simulacion == #
