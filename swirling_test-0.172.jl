@@ -17,8 +17,8 @@ mutable struct Particle{N, T}
     inertia::T            # Momento de inercia
 
     #-- Variables para registrar la fuerza de contacto y el torque respecto a la pared-- #
-    f_pared::SVector{N, T}
-    tau_pared::T 
+    f_pared::SVector{N, T}  # Vector de fuerza contra la pared del recipiente
+    tau_pared::T            # Torque contra la pared del recipiente
 end
 
 # == Funciones que generan las configuraciones de particulas. == #
@@ -27,7 +27,19 @@ end
 # Se ponen ciertos valores por defecto para la masa y el radio de las particulas, pero se pueden cambiar al llamar a la funcion.
 function generar_sistema(N::Int, D::Int; m::Float64 = 1.0, R::Float64 = 1.0, theta::Float64 = 0.0, omega::Float64 = 0.0, alpha::Float64 = 0.0)
     # Se estan considerando por ahora que las particulas son discos uniformes, por lo que el momento de inercia es I = m*R^2/2.
-    sistema = [Particle(zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), zeros(SVector{D, Float64}), m, R, theta, omega, alpha, m*R^2/2, zeros(SVector{D, Float64}), 0.0) for i in 1:N]
+    sistema = [Particle(
+        zeros(SVector{D, Float64}), # Posicion
+        zeros(SVector{D, Float64}), # Velocidad
+        zeros(SVector{D, Float64}), # Aceleracion
+        m,                          # Masa
+        R,                          # Radio
+        theta,                      # Angulo de orientacion
+        omega,                      # Velocidad angular
+        alpha,                      # Aceleracion angular
+        m*R^2/2,                    # Momento de Inercia
+        zeros(SVector{D, Float64}), # Fuerza contra la pared para guardar
+        0.0,                        # Torque cotra la pared para guardar
+        ) for i in 1:N]
     println("El sistema de particulas de dimension ", D," con ", N, " particulas fue creado.")
     return sistema
 end
@@ -218,9 +230,6 @@ end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas y el contenedor circular -- #
 function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
-    # Variable para acumular la energia potencial particula-pared
-    energia_Potencial_part_pared = 0.0
-
     # El modelo de fuerzas usado es linear spring-dashpot (resorte + amortiguamiento)
     for p in particles
         d = norm(p.r)                               # Distancia de la particula al centro del recipiente
@@ -286,11 +295,6 @@ end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas -- #
 function contacto_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gamma_n, mu, gamma_t), energia_Mecanica::Vector{T}) where {N, T}
-    # Variable para acumular la energia potencial particula-particula
-    energia_Potencial_part_part = 0.0
-    # Variable para acumular la potencia disipada particula-particula
-    potencia_Disipada_part_part = 0.0
-
     # Numero de particulas en el sistema
     num_p = length(particles)
 
@@ -308,6 +312,8 @@ function contacto_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gam
             if d < suma_radios && d > 0.0
                 # Vector Normal Unitario, que apunta de la particula j a la particula i
                 n_ij = r_ij / d
+                # Vector Tangencial Unitario
+                t_ij = 
 
                 # Vectores desde los centros de las particulas hasta el punto de contacto
                 r_ci = -p_i.radius * n_ij  # Vector desde el centro de la particula i hasta el punto de contacto
@@ -346,7 +352,6 @@ function contacto_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gam
                 if v_t_mag > 0.0
                     # Vector Tangencial Unitario
                     t_ij = v_t / v_t_mag
-
                     # Fuerza tangencial de prueba de tipo viscoso
                     F_t_mag_prueba = gamma_t * v_t_mag
 
@@ -371,24 +376,10 @@ function contacto_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gam
                     # La fuerza tangencial sobre la particula j es opuesta a la de la particula i.
                     tau_j = r_cj[1]*(-F_t_vec[2]) - r_cj[2]*(-F_t_vec[1])
                     particles[j].alpha += tau_j / p_j.inertia
-  
-                    # Calculo de la potencia disipada en la interaccion particula-particula
-                    # Aqui se escribe la potencia disipada (F*v) en 2 partes, las cuales corresponden
-                    # a los dos terminos viscosos que se estan considerando: el normal con gamma_n
-                    # y el tangencial que viene representado por el resultado de F_t_mag.
-                    potencia_Disipada_part_part += gamma_n * v_n_mag^2 + F_t_mag * v_t_mag
-
-                    # ESTE IF NECESITA ALGUNAS PRUEBAS ADICIONALES PARA SABER SI ES CONFIABLE
                 end
-
-                # Calculo de la energia potencial de la interaccion particula-particula
-                energia_Potencial_part_part += 0.5 * k_n * delta^2
             end
         end
     end
-    # Registro de la energia potencial y disipada particula-particula en un instante de tiempo.
-    energia_Mecanica[6] = energia_Potencial_part_part
-    energia_Mecanica[7] += potencia_Disipada_part_part*dt
 end
 
 # -- Funcion que calcula todas las fuerzas que actuan sobre las particulas del sistema -- #
@@ -571,7 +562,7 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 90
+    numero_Particulas = 8
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -583,7 +574,7 @@ function simular_sistema()
         dt = 1.0e-4,
 
         # -- Parametros de la excitacion orbital -- #
-        amplitud = 1.5,     # Radio de la excitacion (1.0 a 5.0 cm)
+        amplitud = 4.0,     # Radio de la excitacion (1.0 a 5.0 cm)
         frecuencia = 1.0,   # Frecuencia de la excitacion (0.1 - 5.0 Hz)
         tau = 0.5,          # Tiempo de rampa (s)
 
@@ -609,17 +600,17 @@ function simular_sistema()
     )
 
     # -- Inicializacion del sistema de particulas -- #
-    #= 
+     
     sistema = generar_sistema(numero_Particulas, dimension_Sistema, R = radio_Particula, m = masa_Particula)
     generar_configuracion!(sistema, radio_Recipiente)
-    =#
-    # Sistema de particulas de prueba para verificar funciones o estabilidad de la simulacion
     
+    # Sistema de particulas de prueba para verificar funciones o estabilidad de la simulacion
+    #=
     sistema = [
         Particle(@SVector[5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2, zeros(SVector{2, Float64}), 0.0)#=, 
         Particle(@SVector[-5.0, 0.0], @SVector[0.0, 0.0], @SVector[0.0, 0.0], 1.0, 0.5, 0.0, 0.0, 0.0, 0.5*masa_Particula*radio_Particula^2, zeros(SVector{2, Float64}), 0.0)=#
     ]
-    
+    =#
     # -- Parametros de la ejecucion -- #
     dt = parametros_Generales.dt                    # En segundos (s)
     tiempo_total = 50.0                             # En segundos (s)
