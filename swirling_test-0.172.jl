@@ -562,7 +562,7 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 1
+    numero_Particulas = 95
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -581,7 +581,7 @@ function simular_sistema()
         # -- Parametros de colisiones particula-recipiente -- #
         
         # -- Normales -- #
-        k_n_wall = 1.0e5, #
+        k_n_wall = 5.0e5, #
         gamma_n_wall = 1.0e3, #
 
         # -- Tangenciales -- #
@@ -591,7 +591,7 @@ function simular_sistema()
         # -- Parametros de colisiones particula-particula -- #
         
         # -- Normales -- #
-        k_n = 1.0e5, #
+        k_n = 5.0e5, #
         gamma_n = 1.0e3, #
 
         # -- Tangenciales -- #
