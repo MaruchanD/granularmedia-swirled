@@ -562,7 +562,7 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 8
+    numero_Particulas = 1
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -574,7 +574,7 @@ function simular_sistema()
         dt = 1.0e-4,
 
         # -- Parametros de la excitacion orbital -- #
-        amplitud = 4.0,     # Radio de la excitacion (1.0 a 5.0 cm)
+        amplitud = 1.5,     # Radio de la excitacion (1.0 a 5.0 cm)
         frecuencia = 1.0,   # Frecuencia de la excitacion (0.1 - 5.0 Hz)
         tau = 0.5,          # Tiempo de rampa (s)
 
