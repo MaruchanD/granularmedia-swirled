@@ -3,7 +3,9 @@ using CSV
 using DataFrames
 
 # 1. Leer los datos desde el archivo .csv
-df = CSV.read("datos/datos_swirling_172.csv", DataFrame; header=false)
+#archivo_fuente = "datos/datos_swirling_172.csv"
+archivo_fuente = "datos/datos_energia_simulacion_v0-200.csv"
+df = CSV.read(archivo_fuente, DataFrame; header=false)
 
 tiempo            = df[:, 1]
 energia_cinetica_relativa = df[:, 2]
@@ -44,7 +46,7 @@ plot!(p1, tiempo, energia_cinetica_rotacional,
       label="Energía Cinetica Rotacional",
       linewidth=2
 )
-#=
+
 plot!(p1, tiempo, trabajo_inercial,
       label="Trabajo Inercial",
       linewidth=2
@@ -54,7 +56,7 @@ plot!(p1, tiempo, trabajo_pared,
       label="Trabajo Pared",
       linewidth=2
 )
-=#
+
 # 4. Segundo gráfico (Energía Total)
 p2 = plot(tiempo, balance,
           label="Balance Energetico Total",
@@ -89,4 +91,4 @@ grafico_final = plot(p1, p2,
                      size=(800, 600))
 
 # 6. Guardar la imagen combinada
-savefig(grafico_final, "graficos/balance_y_energia_cinetica_8-particula_4.0-amplitud.png")
+savefig(grafico_final, "graficos/balance_y_energia_cinetica_test-0200.png")
