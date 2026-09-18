@@ -405,11 +405,11 @@ function interaccion_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, 
 
                     # Calculo y aplicacion del torque debido a la fuerza tangencial
                     # Torque sobre la particula i
-                    tau_i = r_ci[1] * F_t_vec[2] - r_ci[2] * F_t_vec[1]
+                    tau_i = r_ci[1] * F_t[2] - r_ci[2] * F_t[1]
 
                     # Torque sobre la particula j
                     # La fuerza tangencial sobre la particula j es opuesta a la de la particula i.
-                    tau_j = r_cj[1]*(-F_t_vec[2]) - r_cj[2]*(-F_t_vec[1])
+                    tau_j = r_cj[1]*(-F_t[2]) - r_cj[2]*(-F_t[1])
 
                     # Se suma la parte tangencial ahora
                     F_total_ij += F_t
@@ -602,7 +602,7 @@ function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vecto
 
     open(archivo, "a") do io
         # Imprime los datos que consideres, pero observa puntualmente balance_diagnostico
-        println(io, "$tiempo,$energia_Cinetica_relativa,$energia_Cinetica_r,$trabajo_Inercial,$trabajo_Pared,$balance_diagnostico")
+        println(io, "$tiempo,$energia_Cinetica_relativa,$energia_Cinetica_r,$trabajo_Inercial,$trabajo_Pared,$trabajo_Particulas,$balance_diagnostico")
     end
 end
 
@@ -610,7 +610,7 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 1
+    numero_Particulas = 10
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -669,7 +669,7 @@ function simular_sistema()
     # Nombre de los archivos de salida para los datos de la simulacion y para los datos extraidos de la simulacion
     # MALDITA SEA, ACUERDATE DE CAMBIAR EL NOMBRE DEL ARCHIVO DE SALIDA, NO TE VUELVAS A EQUIVOCAR
     archivo_salida_1 = "resultados/simulacion_programa_V0-200.xyz"
-    archivo_salida_2 = "datos/datos_energia_simulacion_v0-200.csv"
+    archivo_salida_2 = "datos/datos_energia_simulacion_V0-200.csv"
     # Apertura y limpieza de los archivos de salida
     open(archivo_salida_1, "w") do io end # Limpiar archivo si existe
     open(archivo_salida_2, "w") do io end # Limpiar archivo si existe
