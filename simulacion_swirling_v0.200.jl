@@ -230,7 +230,7 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     trabajo_Pared_step!(particles, dt, energia_Mecanica)
 
     # 7. Calculo del Trabajo de la fuerza de contacto entre particulas
-    trabajo_Particulas_step!()
+    trabajo_Particulas_step!(particles, dt, energia_Mecanica)
 
     # 8. Calculo de la Energia Cinetica
     energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
@@ -587,17 +587,18 @@ function guardar_frame_xyz(archivo::String, particles::Vector{Particle{N, T}}, t
 end
 
 function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
-    energia_Cinetica_r = energia_Mecanica[2]
-    trabajo_Inercial = energia_Mecanica[7]              
+    energia_Cinetica_r = energia_Mecanica[2]              
     energia_Cinetica_relativa = energia_Mecanica[3]     
     trabajo_Pared = energia_Mecanica[5]
+    trabajo_Particulas = energia_Mecanica[6]
+    trabajo_Inercial = energia_Mecanica[7]
 
     # K_total = K_traslacional_relativa + K_rotacional
     energia_Cinetica_Total = energia_Cinetica_relativa + energia_Cinetica_r
     
     # Teorema del Trabajo y la Energía: ΔK = W_neto
     # Como la partícula parte del reposo, K_inicial = 0.0
-    balance_diagnostico = energia_Cinetica_Total - trabajo_Inercial - trabajo_Pared
+    balance_diagnostico = energia_Cinetica_Total - trabajo_Inercial - trabajo_Pared - trabajo_Particulas
 
     open(archivo, "a") do io
         # Imprime los datos que consideres, pero observa puntualmente balance_diagnostico
