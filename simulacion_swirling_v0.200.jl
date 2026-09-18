@@ -7,22 +7,37 @@ using LinearAlgebra
 
 # == Estructura de datos para representar una particula == #
 mutable struct Particle{N, T}
+    # -- Propiedades de la particula -- #
+    mass::T                 # Masa
+    radius::T               # Radio
+    inertia::T              # Momento de inercia
+
     # -- Grados de libertad traslacionales -- #
-    r::SVector{N, T}      # Posición
-    v::SVector{N, T}      # Velocidad
-    a::SVector{N, T}      # Aceleración
-    mass::T               # Masa
-    radius::T             # Radio
-
+    r::SVector{N, T}        # Posición
+    v::SVector{N, T}        # Velocidad
+    a::SVector{N, T}        # Aceleración
+    
     # -- Grados de libertad rotacionales (2D) -- #
-    theta::T              # Ángulo de orientación
-    omega::T              # Velocidad angular
-    alpha::T              # Aceleración angular
-    inertia::T            # Momento de inercia
+    theta::T                # Ángulo de orientación
+    omega::T                # Velocidad angular
+    alpha::T                # Aceleración angular
 
-    #-- Variables para registrar la fuerza de contacto y el torque respecto a la pared-- #
-    f_pared::SVector{N, T}  # Vector de fuerza contra la pared del recipiente
-    tau_pared::T            # Torque contra la pared del recipiente
+    # -- Memoria cinemática (estado t) --#
+    v_old::SVector{N, T}    # Velocidad en t
+    omega_old::T            # Velocidad angular en t
+    a_old::SVector{N, T}    # Aceleración en t
+    alpha_old::T            # Aceleración angular en t
+
+    # -- Memoria dinamica para balances de energía (pared y partículas) -- #
+    f_pared::SVector{N, T}  # Fuerza contra la pared en t + dt
+    tau_pared::T            # Torque contra la pared en t + dt
+    f_pared_old::SVector{N, T}  # Fuerza contra la pared en t
+    tau_pared_old::T        # Torque contra la pared en t
+    
+    f_part::SVector{N, T}   # Fuerza sobre la particula en t + dt
+    tau_part::T             # Torque sobre la particula en t + dt
+    f_part_old::SVector{N, T}   # Fuerza sobre la particula en t
+    tau_part_old::T         # Torque sobre la particula en t
 end
 
 # == Funciones que generan las configuraciones de particulas. == #
@@ -32,17 +47,32 @@ end
 function generar_sistema(N::Int, D::Int; m::Float64 = 1.0, R::Float64 = 1.0, theta::Float64 = 0.0, omega::Float64 = 0.0, alpha::Float64 = 0.0)
     # Se estan considerando por ahora que las particulas son discos uniformes, por lo que el momento de inercia es I = m*R^2/2.
     sistema = [Particle(
+        #= Propiedades de la particula=#
+        m,                          # Masa
+        R,                          # Radio
+        m*R^2/2,                    # Momento de Inercia (discos)
+        #= Grados de libertad traslacional =#
         zeros(SVector{D, Float64}), # Posicion
         zeros(SVector{D, Float64}), # Velocidad
         zeros(SVector{D, Float64}), # Aceleracion
-        m,                          # Masa
-        R,                          # Radio
+        #= Grados de libertad rotacional =#
         theta,                      # Angulo de orientacion
         omega,                      # Velocidad angular
         alpha,                      # Aceleracion angular
-        m*R^2/2,                    # Momento de Inercia
-        zeros(SVector{D, Float64}), # Fuerza contra la pared para guardar
-        0.0,                        # Torque cotra la pared para guardar
+        #= Memoria cinematica =#
+        zeros(SVector{D, Float64}), # Velocida en el paso t + dt
+        0.0,                        # Velocidad angular en el paso t + dt
+        zeros(SVector{D, Float64}), # Aceleración en el paso t
+        0.0,                        # Aceleración angular en el paso t
+        #= Memoria dinamica =#
+        zeros(SVector{D, Float64}), # Fuerza contra la pared en t + dt
+        0.0,                        # Torque contra la pared en t + dt
+        zeros(SVector{D, Float64}), # Fuerza contra la pared en t
+        0.0,                        # Torque contra la pared en t
+        zeros(SVector{D, Float64}), # Fuerza debido a otra particula en t + dt
+        0.0,                        # Torque debido a otra particula en t + dt
+        zeros(SVector{D, Float64}), # Fuerza debido a otra particula en t
+        0.0                         # Torque debido a otra particula en t
         ) for i in 1:N]
     println("El sistema de particulas de dimension ", D," con ", N, " particulas fue creado.")
     return sistema
