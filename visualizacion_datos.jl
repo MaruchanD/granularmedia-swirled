@@ -4,7 +4,7 @@ using DataFrames
 
 # 1. Leer los datos desde el archivo .csv
 #archivo_fuente = "datos/datos_swirling_172.csv"
-archivo_fuente = "datos/datos_energia_simulacion_v0-200.csv"
+archivo_fuente = "datos/datos_energia_simulacion_V0-200.csv"
 df = CSV.read(archivo_fuente, DataFrame; header=false)
 
 tiempo            = df[:, 1]
@@ -12,7 +12,8 @@ energia_cinetica_relativa = df[:, 2]
 energia_cinetica_rotacional = df[:, 3]
 trabajo_inercial = df[:, 4]
 trabajo_pared = df[:, 5]
-balance = df[:, 6]
+trabajo_particulas = df[:, 6]
+balance = df[:, 7]
 
 # 2. Configuración de escalas, límites y leyendas
 tipo_escala_x    = :identity
@@ -37,8 +38,8 @@ p1 = plot(tiempo, energia_cinetica_relativa,
           legend=posicion_leyenda
 )
 #=
-plot!(p1, tiempo, energia_potencial,
-      label="Energía Potencial",
+plot!(p1, tiempo, trabajo_particulas,
+      label="Trabajo Partículas",
       linewidth=2
 )
 =#
@@ -46,7 +47,7 @@ plot!(p1, tiempo, energia_cinetica_rotacional,
       label="Energía Cinetica Rotacional",
       linewidth=2
 )
-
+#=
 plot!(p1, tiempo, trabajo_inercial,
       label="Trabajo Inercial",
       linewidth=2
@@ -56,7 +57,7 @@ plot!(p1, tiempo, trabajo_pared,
       label="Trabajo Pared",
       linewidth=2
 )
-
+=#
 # 4. Segundo gráfico (Energía Total)
 p2 = plot(tiempo, balance,
           label="Balance Energetico Total",
