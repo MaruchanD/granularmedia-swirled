@@ -564,6 +564,45 @@ function trabajo_Particulas_step!(particles::Vector{Particle{N, T}}, dt::T, ener
     energia_Mecanica[6] += trabajo_part_paso
 end
 
+# -- Función para calcular la frecuencia de rotación del clúster -- #
+function frecuencia_rotacion_cluster(particles::Vector{Particle{N, T}}) where {N, T}
+    num_p = length(particles)
+    
+    # 1. Calcular el centro de masas y la velocidad del centro de masas
+    r_cm = sum(p.r for p in particles) / num_p
+    v_cm = sum(p.v for p in particles) / num_p
+
+    sumatoria_f = 0.0
+    for p in particles
+        # Variables relativas al centro de masas
+        r_star = p.r - r_cm
+        v_star = p.v - v_cm
+        
+        r_star_sq = dot(r_star, r_star)
+        
+        if r_star_sq > 1e-12 # Evitar división por cero en partículas muy cerca del CM
+            # Producto cruzado bidimensional: r_x * v_y - r_y * v_x
+            cross_prod = r_star[1] * v_star[2] - r_star[2] * v_star[1]
+            sumatoria_f += cross_prod / r_star_sq
+        end
+    end
+    
+    # La Ecuación 8 arroja la velocidad angular. Dividimos por 2*pi para obtener Hz.
+    return (sumatoria_f / num_p) / (2 * pi)
+end
+
+# -- Función para calcular el momento de inercia respecto al eje del recipiente -- #
+function inercia_cluster(particles::Vector{Particle{N, T}}) where {N, T}
+    I_total = 0.0
+    for p in particles
+        # Distancia al cuadrado respecto al centro del contenedor (origen)
+        r_sq = dot(p.r, p.r) 
+        # Teorema de ejes paralelos: I_eje = I_cm + m * d^2
+        I_total += p.inertia + p.mass * r_sq
+    end
+    return I_total
+end
+
 # == Funciones para exportar datos de la simulacion == #
 
 # Exportacion a OVITO
@@ -606,11 +645,18 @@ function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vecto
     end
 end
 
+# -- Función para guardar las variables macroscópicas del clúster -- #
+function guardar_datos_macroscopicos(archivo::String, tiempo::Float64, num_p::Int, f_rot::Float64, I_cluster::Float64)
+    open(archivo, "a") do io
+        println(io, "$tiempo,$num_p,$f_rot,$I_cluster")
+    end
+end
+
 # -- Funcion principal para simular el sistema de particulas -- #
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 10
+    numero_Particulas = 90
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -629,7 +675,7 @@ function simular_sistema()
         # -- Parametros de colisiones particula-recipiente -- #
         
         # -- Normales -- #
-        k_n_wall = 1.0e5, #
+        k_n_wall = 7.0e5, #
         gamma_n_wall = 1.0e3, #
 
         # -- Tangenciales -- #
@@ -639,7 +685,7 @@ function simular_sistema()
         # -- Parametros de colisiones particula-particula -- #
         
         # -- Normales -- #
-        k_n = 1.0e5, #
+        k_n = 7.0e5, #
         gamma_n = 1.0e3, #
 
         # -- Tangenciales -- #
