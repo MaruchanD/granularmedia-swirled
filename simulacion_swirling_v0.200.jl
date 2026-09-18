@@ -597,9 +597,9 @@ end
 
 function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
     energia_Cinetica_r = energia_Mecanica[2]
-    trabajo_Inercial = energia_Mecanica[8]              
-    energia_Cinetica_relativa = energia_Mecanica[9]     
-    trabajo_Pared = energia_Mecanica[10]
+    trabajo_Inercial = energia_Mecanica[7]              
+    energia_Cinetica_relativa = energia_Mecanica[3]     
+    trabajo_Pared = energia_Mecanica[5]
 
     # K_total = K_traslacional_relativa + K_rotacional
     energia_Cinetica_Total = energia_Cinetica_relativa + energia_Cinetica_r
