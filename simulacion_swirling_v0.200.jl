@@ -542,7 +542,7 @@ function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, energia_M
 
     end
     # Almacenar en la nueva posición del arreglo (índice 10)
-    energia_Mecanica[6] += trabajo_pared_paso
+    energia_Mecanica[5] += trabajo_pared_paso
 end
 
 # == Funciones para exportar datos de la simulacion == #
@@ -566,34 +566,6 @@ function guardar_frame_xyz(archivo::String, particles::Vector{Particle{N, T}}, t
         println(io, "Contenedor 0.0 0.0 0.0 $radio_Recipiente 0.0 0.0")
     end
 end
-#=
-# -- Funcion para exportar datos extraidos de la simulacion -- #
-function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
-    energia_Cinetica_t = energia_Mecanica[1]            # Energia cinetica traslacional
-    energia_Cinetica_r = energia_Mecanica[2]            # Energia cinetica rotacional
-    energia_Cinetica = energia_Mecanica[3]              # Energia cinetica total
-    energia_Pot_pared = energia_Mecanica[4]             # Energia potencial pared-particula
-    energia_Disip_pared = energia_Mecanica[5]           # Energia disipada por colisiones pared-particula
-    energia_Pot_part = energia_Mecanica[6]              # Energia potencial particula-particula
-    energia_Disip_part = energia_Mecanica[7]            # Energia disipada por colisiones particula-particula
-    trabajo_Inercial = energia_Mecanica[8]              # Trabajo inercial de la excitacion orbital
-    energia_Cinetica_relativa = energia_Mecanica[9]     # Energia cinetica relativa al marco no inercial
-    
-    # La energia mecanica presente en los cuerpos instantaneamente
-    energia_Mecanica_Total = energia_Cinetica_relativa + energia_Pot_pared + energia_Pot_part
-    
-    # La energia disipada total acumulada
-    energia_Disipada_Total = energia_Disip_pared + energia_Disip_part
-    
-    # Balance = (Energía Mecánica + Energía Disipada) - Trabajo Inyectado
-    # Este valor debería ser cercano a 0 en todo momento si el integrador de Verlet es estable.
-    balance = (energia_Mecanica_Total + energia_Disipada_Total) - trabajo_Inercial
-
-    open(archivo, "a") do io
-        println(io,"$tiempo,","$energia_Cinetica_relativa,","$energia_Pot_pared,","$energia_Disip_pared,","$energia_Pot_part,","$energia_Disip_part,","$energia_Mecanica_Total,","$trabajo_Inercial,","$balance,","$energia_Cinetica")
-    end
-end
-=#
 
 function guardar_datos(archivo::String, tiempo::Float64, energia_Mecanica::Vector{T}) where {T}
     energia_Cinetica_r = energia_Mecanica[2]
@@ -618,7 +590,7 @@ end
 function simular_sistema()
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
-    numero_Particulas = 8
+    numero_Particulas = 1
     radio_Recipiente = 6.0          # En centimetros
     radio_Particula = 0.5           # En centimetros
     masa_Particula = 1.0            # En gramos
@@ -630,7 +602,7 @@ function simular_sistema()
         dt = 1.0e-4,
 
         # -- Parametros de la excitacion orbital -- #
-        amplitud = 4.0,     # Radio de la excitacion (1.0 a 5.0 cm)
+        amplitud = 1.5,     # Radio de la excitacion (1.0 a 5.0 cm)
         frecuencia = 1.0,   # Frecuencia de la excitacion (0.1 - 5.0 Hz)
         tau = 0.5,          # Tiempo de rampa (s)
 
@@ -656,7 +628,7 @@ function simular_sistema()
     )
 
     # -- Inicializacion del sistema de particulas -- #
-     
+    
     sistema = generar_sistema(numero_Particulas, dimension_Sistema, R = radio_Particula, m = masa_Particula)
     generar_configuracion!(sistema, radio_Recipiente)
     
@@ -676,8 +648,8 @@ function simular_sistema()
     # -- Archivos de salida -- #
     # Nombre de los archivos de salida para los datos de la simulacion y para los datos extraidos de la simulacion
     # MALDITA SEA, ACUERDATE DE CAMBIAR EL NOMBRE DEL ARCHIVO DE SALIDA, NO TE VUELVAS A EQUIVOCAR
-    archivo_salida_1 = "resultados/giro_swirling_172.xyz"
-    archivo_salida_2 = "datos/datos_swirling_172.csv"
+    archivo_salida_1 = "resultados/simulacion_programa_V0-200.xyz"
+    archivo_salida_2 = "datos/datos_energia_simulacion_v0-200.csv"
     # Apertura y limpieza de los archivos de salida
     open(archivo_salida_1, "w") do io end # Limpiar archivo si existe
     open(archivo_salida_2, "w") do io end # Limpiar archivo si existe
