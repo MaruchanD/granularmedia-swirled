@@ -1,6 +1,6 @@
 #=
 Primer salto de versionado. A partir de aqui, las modificaciones seran de forma. El control de versionado
-lo llevare con V.200-* donde el asterico refiere al numero del commit. Hacer mas commits
+lo llevare con V.200-* donde el asterico refiere al numero del commit. Hacer mas commits.
 =#
 using StaticArrays
 using LinearAlgebra
@@ -263,7 +263,7 @@ function excitacion_orbital_rampa!(particles::Vector{Particle{N,T}}, tiempo::T, 
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas y el contenedor circular -- #
-function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall), energia_Mecanica::Vector{T}) where {N, T}
+function interaccion_recipiente!(particles::Vector{Particle{N, T}}, radio_Recipiente::T, (; dt, k_n_wall, gamma_n_wall, gamma_t_wall, mu_wall)) where {N, T}
     # El modelo de fuerzas usado es linear spring-dashpot (resorte + amortiguamiento)
     for p in particles
         d = norm(p.r)                               # Distancia de la particula al centro del recipiente
@@ -328,7 +328,7 @@ function contenedor_circular!(particles::Vector{Particle{N, T}}, radio_Recipient
 end
 
 # -- Funcion para aplicar las fuerzas de contacto entre las particulas -- #
-function contacto_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gamma_n, mu, gamma_t), energia_Mecanica::Vector{T}) where {N, T}
+function interaccion_particulas!(particles::Vector{Particle{N, T}}, (; dt, k_n, gamma_n, mu, gamma_t)) where {N, T}
     # Numero de particulas en el sistema
     num_p = length(particles)
 
@@ -429,10 +429,10 @@ function fuerza_total!(particles::Vector{Particle{N, T}}, tiempo::T, parametros_
     excitacion_orbital_rampa!(particles, tiempo, parametros_Generales)
 
     # -- Fuerzas debidas al contacto con el recipiente circular -- #
-    contenedor_circular!(particles, radio_Recipiente, parametros_Generales, energia_Mecanica)
+    interaccion_recipiente!(particles, radio_Recipiente, parametros_Generales)
 
     # -- Fuerzas debidas al contacto entre particulas -- #
-    contacto_particulas!(particles, parametros_Generales, energia_Mecanica)
+    interaccion_particulas!(particles, parametros_Generales)
 end
 
 # == Funciones auxiliares para obtener informacion de la simulacion == #
