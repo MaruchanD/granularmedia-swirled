@@ -224,13 +224,13 @@ function velocity_verlet_step!(particles::Vector{Particle{N, T}}, dt::T, calc_fo
     end
 
     # 5. Calculo del Trabajo Inercial del paso
-    trabajo_Inercial_step!(particles, dt, tiempo, parametros_Generales, v_old, energia_Mecanica)
+    trabajo_Inercial_step!(particles, dt, tiempo, parametros_Generales, energia_Mecanica)
 
     # 6. Calculo del Trabajo de la fuerza de contacto con la pared (y el torque)
-    trabajo_Pared_step!(particles, dt, v_old, omega_old, f_pared_old, tau_pared_old, energia_Mecanica)
+    trabajo_Pared_step!(particles, dt, energia_Mecanica)
 
     # 7. Calculo del Trabajo de la fuerza de contacto entre particulas
-    trabajo_Particulas_step!()
+    #trabajo_Particulas_step!()
 
     # 8. Calculo de la Energia Cinetica
     energia_Cinetica_step!(particles, tiempo, parametros_Generales, energia_Mecanica)
@@ -503,38 +503,36 @@ function energia_Cinetica_step!(particles::Vector{Particle{N, T}}, tiempo::T, pa
     # Energia cinetica traslacional y rotacional
     energia_Mecanica[1] = E_k_traslacional
     energia_Mecanica[2] = E_k_rotacional
-
-    # Energia cinetica total
-    energia_Mecanica[3] = E_k_traslacional + E_k_rotacional
-    
     # Energia cinetica relativa al marco giratorio
-    energia_Mecanica[9] = E_k_rel
+    energia_Mecanica[3] = E_k_rel
+    # Energia cinetica total
+    energia_Mecanica[4] = E_k_traslacional + E_k_rotacional
 end
 
 # -- Funcion para calcular el trabajo inercial de la fuerza inercial despues de cada paso del integrador -- #
-function trabajo_Inercial_step!(particles::Vector{Particle{N, T}}, dt::T, tiempo::T, parametros_Generales::NamedTuple, v_old::Vector{SVector{N, T}}, energia_Mecanica::Vector{T}) where {N, T}
+function trabajo_Inercial_step!(particles::Vector{Particle{N, T}}, dt::T, tiempo::T, parametros_Generales::NamedTuple, energia_Mecanica::Vector{T}) where {N, T}
     # Cálculo del Trabajo Inercial del paso
     a_inercial_old = obtener_aceleracion_inercial(tiempo, parametros_Generales)
     a_inercial_actual = obtener_aceleracion_inercial(tiempo + dt, parametros_Generales)
     a_inercial_media = 0.5 * (a_inercial_actual + a_inercial_old)
     potencia_inercial = 0.0
     
-    for (i, p) in enumerate(particles)
+    for p in particles
         # Promedio exacto de la velocidad durante este intervalo dt
-        v_media = 0.5 * (v_old[i] + p.v) 
+        v_media = 0.5 * (p.v + p.v_old) 
         potencia_inercial += dot(p.mass * a_inercial_media, v_media)
     end
     
-    energia_Mecanica[8] += potencia_inercial * dt
+    energia_Mecanica[7] += potencia_inercial * dt
 end
 # -- Funcion para calcular la energia disipada por choques con las paredes -- #
-function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, v_old::Vector{SVector{N, T}}, omega_old::Vector{T}, f_pared_old::Vector{SVector{N, T}}, tau_pared_old::Vector{T}, energia_Mecanica::Vector{T}) where {N, T}
+function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, energia_Mecanica::Vector{T}) where {N, T}
     trabajo_pared_paso = 0.0
-    for (i, p) in enumerate(particles)
-        v_media = 0.5 * (v_old[i] + p.v)
-        omega_media = 0.5 * (omega_old[i] + p.omega)
-        f_pared_media = 0.5 * (f_pared_old[i] + p.f_pared)
-        tau_pared_media = 0.5 * (tau_pared_old[i] + p.tau_pared)
+    for p in particles
+        v_media = 0.5 * (p.v_old + p.v)
+        omega_media = 0.5 * (p.omega_old + p.omega)
+        f_pared_media = 0.5 * (p.f_pared_old + p.f_pared)
+        tau_pared_media = 0.5 * (p.tau_pared_old + p.tau_pared)
         
         # Potencia mecánica de la pared (incluye tanto la elasticidad como la disipación)
         potencia_traslacional = dot(f_pared_media, v_media)
@@ -544,7 +542,7 @@ function trabajo_Pared_step!(particles::Vector{Particle{N, T}}, dt::T, v_old::Ve
 
     end
     # Almacenar en la nueva posición del arreglo (índice 10)
-    energia_Mecanica[10] += trabajo_pared_paso
+    energia_Mecanica[6] += trabajo_pared_paso
 end
 
 # == Funciones para exportar datos de la simulacion == #
