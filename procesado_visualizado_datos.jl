@@ -21,12 +21,22 @@ function procesar_y_graficar_datos(directorio_datos::String = "datos")
     frecuencia_promedio = Float64[]
     inercia_promedio = Float64[]
 
+    # Variables para almacenar la amplitud y frecuencia leídas del nombre
+    amplitud_str = ""
+    frecuencia_str = ""
+
     println("Buscando y procesando archivos en '$directorio_datos'...")
 
     for nombre_archivo in lista_archivos
         coincidencia = match(patron_archivo, nombre_archivo)
         
         if coincidencia !== nothing
+            # Extraer amplitud y frecuencia del primer archivo que coincida
+            if isempty(amplitud_str)
+                amplitud_str = coincidencia.captures[2]
+                frecuencia_str = coincidencia.captures[3]
+            end
+
             ruta_completa = joinpath(directorio_datos, nombre_archivo)
             
             # Leer el archivo delimitado por comas
@@ -64,6 +74,21 @@ function procesar_y_graficar_datos(directorio_datos::String = "datos")
     valores_N = valores_N[orden]
     frecuencia_promedio = frecuencia_promedio[orden]
     inercia_promedio = inercia_promedio[orden]
+
+    # =========================================================================================================
+    # Exportacion de los datos obtenidos como funcion del numero de particulas, la frecuencia  y la amplitud
+    # =========================================================================================================
+    archivo_resumen_csv = joinpath(directorio_datos, "resumen_macroscopico_A$(amplitud_str)_F$(frecuencia_str).csv")
+    
+    open(archivo_resumen_csv, "w") do io
+        # Encabezado descriptivo
+        println(io, "N,frecuencia_promedio_Hz,inercia_promedio")
+        # Escritura de los datos ordenados
+        for i in 1:length(valores_N)
+            println(io, "$(valores_N[i]),$(frecuencia_promedio[i]),$(inercia_promedio[i])")
+        end
+    end
+    println("\n-> Datos consolidados guardados en: '$archivo_resumen_csv'")
 
     # ==============================================================================
     # Generación de gráficos (subplots compartiendo el eje X)
@@ -112,8 +137,8 @@ function procesar_y_graficar_datos(directorio_datos::String = "datos")
 
     # Mostrar en pantalla y guardar en disco
     display(figura_final)
-    savefig(figura_final, "resultados_macroscopicos_vs_N.png")
-    println("\nGráfica guardada exitosamente como 'resultados_macroscopicos_vs_N.png'.")
+    savefig(figura_final, "resultados_macroscopicos_vs_N_(A$(amplitud_str)_F$(frecuencia_str)).png")
+    println("\nGráfica guardada exitosamente como 'resultados_macroscopicos_vs_N_(A$(amplitud_str)_F$(frecuencia_str)).png'.")
 end
 
 # Ejecución
