@@ -653,10 +653,15 @@ function guardar_datos_macroscopicos(archivo::String, tiempo::Float64, num_p::In
 end
 
 # -- Funcion principal para simular el sistema de particulas -- #
-function simular_sistema()
-    # -- Solicitud dinámica del número de partículas al usuario -- #
-    print("Introduzca el número de partículas del sistema: ")
-    numero_Particulas = parse(Int, readline())
+function simular_sistema(N_input::Union{Int, Nothing} = nothing)
+    # Condicional para verificar si se paso un numero en la llamada de la funcion
+    numero_Particulas = if isnothing(N_input)
+        # -- Solicitud dinámica del número de partículas al usuario -- #
+        print("Introduzca el número de partículas del sistema: ")
+        numero_Particulas = parse(Int, readline())
+    else
+        N_input
+    end
 
     # -- Parametros del sistema -- #
     dimension_Sistema = 2
@@ -719,8 +724,8 @@ function simular_sistema()
     frec = parametros_Generales.frecuencia
     # Nombre de los archivos de salida para los datos de la simulacion y para los datos extraidos de la simulacion
     # MALDITA SEA, ACUERDATE DE CAMBIAR EL NOMBRE DEL ARCHIVO DE SALIDA, NO TE VUELVAS A EQUIVOCAR
-    archivo_salida_1 = "resultados/simulacion_N$(numero_Particulas)_A$(amp)_F$(frecuencia).xyz"
-    archivo_salida_2 = "datos/datos_energia_N$(numero_Particulas)_A$(amp)_F$(frecuencia).csv"
+    archivo_salida_1 = "resultados/simulacion_N$(numero_Particulas)_A$(amp)_F$(frec).xyz"
+    archivo_salida_2 = "datos/datos_energia_N$(numero_Particulas)_A$(amp)_F$(frec).csv"
     archivo_salida_3 = "datos/datos_macroscopicos_N$(numero_Particulas)_A$(amp)_F$(frec).csv"
 
     # Apertura y limpieza de los archivos de salida
@@ -768,4 +773,4 @@ function simular_sistema()
     println("¡Simulación terminada!\nArchivos generados:\n- $archivo_salida_1\n- $archivo_salida_2\n- $archivo_salida_3")
 end
 
-simular_sistema()
+#simular_sistema()
