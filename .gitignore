@@ -3,8 +3,10 @@
 *.dat
 *.png
 *.cpp
+*.csv
 animacion/
 Codigo Carlos/
 datos/
 graficos/
 resultados/
+datos (A1.0-F1.0)/
