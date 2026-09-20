@@ -677,6 +677,7 @@ function simular_sistema(N_input::Union{Int, Nothing} = nothing)
 
         # -- Parametros de la excitacion orbital -- #
         amplitud = 2.0,     # Radio de la excitacion (1.0 a 5.0 cm)
+        amplitud = 2.5,     # Radio de la excitacion (1.0 a 5.0 cm)
         frecuencia = 1.0,   # Frecuencia de la excitacion (0.1 - 5.0 Hz)
         tau = 0.5,          # Tiempo de rampa (s)
 
@@ -731,7 +732,7 @@ function simular_sistema(N_input::Union{Int, Nothing} = nothing)
     # Apertura y limpieza de los archivos de salida
     open(archivo_salida_1, "w") do io end
     open(archivo_salida_2, "w") do io end
-    open(archivo_salida_2, "w") do io end
+    open(archivo_salida_3, "w") do io end
 
     # -- Arreglo para registrar la energia del sistema -- # 
     energia_Mecanica = [
@@ -765,7 +766,7 @@ function simular_sistema(N_input::Union{Int, Nothing} = nothing)
 
             # 2. Guardado en archivos
             guardar_frame_xyz(archivo_salida_1, sistema, tiempo_actual, radio_Recipiente)
-            guardar_datos(archivo_salida_2, tiempo_actual, energia_Mecanica)
+            #guardar_datos(archivo_salida_2, tiempo_actual, energia_Mecanica)
             guardar_datos_macroscopicos(archivo_salida_3, tiempo_actual, numero_Particulas, f_rot, I_cluster)
         end
     end
