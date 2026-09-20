@@ -730,7 +730,7 @@ function simular_sistema(N_input::Union{Int, Nothing} = nothing)
 
     # Apertura y limpieza de los archivos de salida
     open(archivo_salida_1, "w") do io end
-    open(archivo_salida_2, "w") do io end
+    #open(archivo_salida_2, "w") do io end
     open(archivo_salida_3, "w") do io end
 
     # -- Arreglo para registrar la energia del sistema -- # 
