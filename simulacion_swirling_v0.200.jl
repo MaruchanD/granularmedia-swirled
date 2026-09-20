@@ -676,7 +676,7 @@ function simular_sistema(N_input::Union{Int, Nothing} = nothing)
         dt = 1.0e-4,
 
         # -- Parametros de la excitacion orbital -- #
-        amplitud = 1.5,     # Radio de la excitacion (1.0 a 5.0 cm)
+        amplitud = 2.0,     # Radio de la excitacion (1.0 a 5.0 cm)
         frecuencia = 1.0,   # Frecuencia de la excitacion (0.1 - 5.0 Hz)
         tau = 0.5,          # Tiempo de rampa (s)
 
