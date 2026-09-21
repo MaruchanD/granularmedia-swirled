@@ -5,7 +5,7 @@
 using DelimitedFiles
 using Plots
 
-function procesar_y_graficar_datos(directorio_datos::String = "datos")
+function procesar_y_graficar_datos(directorio_datos::String = "datos (A4.5-F1.0)")
     if !isdir(directorio_datos)
         error("El directorio '$directorio_datos' no existe.")
     end
